@@ -3,7 +3,7 @@
  */
 class SheetManager {
   constructor() {
-    this.spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    this.spreadsheet = SpreadsheetApp.openById(getSpreadsheetId());
     this.initSheets();
   }
   

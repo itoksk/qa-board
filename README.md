@@ -1,17 +1,27 @@
 # QA Board - 教育イベント質問集約システム
 
+教育関連のイベントで参加者から集めた質問を地域・カテゴリ別に整理し、AIを活用して代表的な質問を自動生成するシステムです。
+
 ## 概要
 
-QA Boardは、教育イベントで参加者から質問を収集し、K-Means クラスタリングとGemini APIを使用して代表的な質問を自動生成するWebアプリケーションです。Google Apps Script (GAS) で構築され、Google Sheetsをデータベースとして使用します。
+このシステムは、大規模な教育イベントで寄せられる多数の質問を効率的に管理・分析するために開発されました。Google Apps Script (GAS) で構築され、Google Sheetsをデータベースとして使用します。
 
 ## 主な機能
 
-- 🎯 **リアルタイム質問収集**: 参加者が質問を投稿できるWebインターフェース
 - 🌏 **地域別管理**: 大阪、名古屋、福岡、広島、東京の5地域に対応
-- 🤖 **AI質問集約**: K-Meansクラスタリングで類似質問をグループ化し、Gemini APIで代表質問を生成
-- 👍 **いいね機能**: 質問への共感度を可視化
-- 🔐 **管理者機能**: パスワード保護された代表質問生成機能
-- 📊 **スプレッドシート連携**: Google Sheetsでデータを永続化
+- 📁 **カテゴリ分類**: 生成AI、教育、ICT、その他の4カテゴリ
+- 🤖 **AI要約**: TF-IDFとK-Meansクラスタリングで類似質問を自動分析し、Gemini APIで代表質問を生成
+- 👍 **いいね機能**: 参加者が共感する質問に「いいね」を付けられる（絵文字アイコン対応）
+- 🔐 **管理者機能**: パスワード保護された管理画面
+- 📊 **データ永続化**: Google Sheetsでデータを管理
+
+## 技術スタック
+
+- **バックエンド**: Google Apps Script (GAS)
+- **フロントエンド**: HTML/CSS/JavaScript (Tailwind CSS)
+- **データベース**: Google Sheets
+- **AI**: Google Gemini API (gemini-1.5-flash)
+- **機械学習**: TF-IDF + K-means クラスタリング（GAS内実装）
 
 ## システム構成
 
@@ -22,6 +32,8 @@ qa-board/
 │   ├── SheetManager.gs    # スプレッドシート操作
 │   ├── QuestionClusterer.gs # K-Meansクラスタリング実装
 │   ├── GeminiService.gs   # Gemini API連携
+│   ├── TextVectorizer.gs  # TF-IDFベクトル化
+│   ├── KMeansClusterer.gs # K-means実装
 │   ├── Initialize.gs      # 初期設定スクリプト
 │   ├── Debug.gs           # デバッグ用ユーティリティ
 │   ├── TestSheet.gs       # テスト関数
@@ -40,79 +52,95 @@ qa-board/
 
 ## セットアップ手順
 
-### 1. Google スプレッドシートの準備
+### 1. Google Sheetsの準備
 
-1. 新しいGoogle スプレッドシートを作成
-2. スプレッドシートIDをメモ（URLの`/d/`と`/edit`の間の文字列）
+1. 新しいGoogle Spreadsheetsを作成
+2. スプレッドシートのIDをメモ（URLの`/d/`と`/edit`の間の文字列）
 
 ### 2. Google Apps Scriptプロジェクトの作成
 
-1. [Google Apps Script](https://script.google.com)にアクセス
+1. [Google Apps Script](https://script.google.com/)にアクセス
 2. 新しいプロジェクトを作成
-3. プロジェクト名を「QA Board」に設定
+3. プロジェクト名を「QA Board」に変更
 
-### 3. ファイルのアップロード
+### 3. スクリプトプロパティの設定
 
-1. `gas/`フォルダ内のすべての`.gs`ファイルをGASプロジェクトに追加
+Google Apps Scriptエディタで以下の手順を実行：
+
+1. プロジェクト設定（歯車アイコン）をクリック
+2. 「スクリプト プロパティ」セクションまでスクロール
+3. 「スクリプト プロパティを追加」をクリック
+4. 以下のプロパティを追加：
+
+| プロパティ名 | 値 | 説明 |
+|------------|---|-----|
+| `SPREADSHEET_ID` | `your-spreadsheet-id` | 手順1でメモしたID |
+| `ADMIN_PASSWORD` | `your-secure-password` | 管理者パスワード |
+| `GEMINI_API_KEY` | `your-gemini-api-key` | [Google AI Studio](https://makersuite.google.com/app/apikey)で取得 |
+
+### 4. ソースコードのデプロイ
+
+1. `gas/`フォルダ内のすべての`.gs`ファイルをGoogle Apps Scriptプロジェクトにコピー
+   - `Code.gs` - メインコード
+   - `SheetManager.gs` - スプレッドシート管理
+   - `QuestionClusterer.gs` - 質問クラスタリング
+   - `GeminiService.gs` - Gemini API連携
+   - `TextVectorizer.gs` - テキストベクトル化
+   - `KMeansClusterer.gs` - K-meansクラスタリング
+   - その他のファイル
+
 2. `html/`フォルダ内のHTMLファイルをHTMLファイルとして追加
-3. `appsscript.json`の内容でマニフェストを更新
+   - `index_gas.html` - メインページ
+   - `styles.html` - スタイルシート
+   - `javascript.html` - クライアントサイドJS
 
-### 4. 設定の更新
+### 5. 初期化の実行
 
-`Code.gs`の以下の定数を更新：
-```javascript
-const SPREADSHEET_ID = 'あなたのスプレッドシートID';
-const ADMIN_PASSWORD = '新しい管理者パスワード';
-```
+1. Google Apps Scriptエディタで`Initialize.gs`を開く
+2. `initializeSpreadsheet`関数を選択
+3. 実行ボタン（▶️）をクリック
+4. 権限を承認
+5. テストデータを追加するか選択
 
-### 5. Gemini API キーの設定
+### 6. Webアプリとしてデプロイ
 
-1. [Google AI Studio](https://makersuite.google.com/app/apikey)でAPIキーを取得
-2. GASプロジェクトのプロパティに設定：
-   - プロジェクト設定 > スクリプトプロパティ
-   - プロパティ名: `GEMINI_API_KEY`
-   - 値: 取得したAPIキー
-
-### 6. 初期化スクリプトの実行
-
-GASエディタで以下の関数を実行：
-1. `initializeSpreadsheet()` - スプレッドシートの初期設定
-2. `testSpreadsheetConnection()` - 接続確認
-
-### 7. Webアプリのデプロイ
-
-1. デプロイ > 新しいデプロイ
-2. 種類: Webアプリ
-3. 実行ユーザー: 自分
-4. アクセス権: 全員
-5. デプロイをクリック
+1. 「デプロイ」→「新しいデプロイ」をクリック
+2. 種類で「ウェブアプリ」を選択
+3. 以下の設定：
+   - 説明: 任意のバージョン説明
+   - 実行ユーザー: 「自分」
+   - アクセスできるユーザー: 「全員」
+4. 「デプロイ」をクリック
+5. 表示されたWebアプリのURLを保存
 
 ## 使い方
 
-### 参加者向け
+### 一般ユーザー向け
 
-1. WebアプリのURLにアクセス
-2. 「質問を投稿する」をクリック
-3. 地域、カテゴリ、質問内容を入力して送信
-4. 「質問一覧を見る」で投稿された質問を確認
-5. 共感する質問に「いいね」
+1. デプロイされたWebアプリのURLにアクセス
+2. 地域とカテゴリを選択して質問を投稿
+3. 他の参加者の質問を閲覧し、共感する質問に「いいね」（👍→❤️）
 
 ### 管理者向け
 
-1. 「代表質問を生成」をクリック
-2. 管理者パスワードを入力
-3. 対象地域を選択して生成実行
-4. 「生成された代表質問」で結果を確認
+1. 管理者画面で設定したパスワードを入力
+2. 「代表質問を生成」ボタンで、AIによる質問分析を実行
+3. 生成された代表質問は自動的に表示される
 
-## 技術仕様
+## アーキテクチャ
 
-### 使用技術
-- **バックエンド**: Google Apps Script (V8ランタイム)
-- **フロントエンド**: HTML5, Tailwind CSS, Vanilla JavaScript
-- **データストア**: Google Sheets
-- **AI/ML**: 
-  - K-Meansクラスタリング（GAS内で実装）
-  - Google Gemini API (gemini-1.5-flash)
+### データフロー
+
+```
+参加者入力 → Google Sheets → クラスタリング処理 → Gemini API → 代表質問生成
+```
+
+### クラスタリングアルゴリズム
+
+1. **前処理**: 日本語テキストの正規化とトークン化（bi-gram）
+2. **ベクトル化**: TF-IDFによる特徴抽出
+3. **クラスタリング**: K-means法（エルボー法で最適クラスタ数決定）
+4. **代表質問生成**: 各クラスタの重心に最も近い質問を基に、Gemini APIで要約
 
 ### データ構造
 
@@ -141,46 +169,75 @@ GASエディタで以下の関数を実行：
   clusterSize: number,  // クラスタ内の質問数
   sourceIds: string[],  // 元質問のID配列
   generatedAt: string,  // 生成日時
-  method: string        // 生成方法（"Gemini API"）
+  method: string        // 生成方法（gemini|fallback）
 }
 ```
 
 ## トラブルシューティング
 
-### 質問が表示されない場合
-1. `Debug.gs`の`runFullDiagnostics()`を実行
-2. スプレッドシートの権限を確認
-3. シート名が正しいか確認（「質問一覧」）
+### エラー: SPREADSHEET_IDが設定されていません
 
-### Gemini API エラー
-1. APIキーが正しく設定されているか確認
-2. APIの利用上限を確認
-3. `testGeminiConnection()`で接続テスト
+スクリプトプロパティに`SPREADSHEET_ID`が正しく設定されているか確認してください。
+
+### エラー: GEMINI_API_KEYが設定されていません
+
+1. [Google AI Studio](https://makersuite.google.com/app/apikey)でAPIキーを取得
+2. スクリプトプロパティに`GEMINI_API_KEY`を設定
+
+### Gemini APIエラー (404: models/gemini-pro is not found)
+
+最新の`gemini-1.5-flash`モデルを使用しているか確認してください。
 
 ### いいね機能が動作しない
-1. 質問IDが正しく設定されているか確認
-2. `inspectSheetData()`でデータ構造を確認
+
+- LocalStorageが有効か確認
+- 質問IDが正しく設定されているか確認
 
 ## 開発者向け情報
 
-### デバッグ機能
-- `Debug.gs`に各種診断関数を用意
-- `runFullDiagnostics()`: 全体診断
-- `testSpreadsheetConnection()`: 接続テスト
-- `checkQuestionSheet()`: データ確認
+### プロジェクト構造
 
-### カスタマイズポイント
-- 地域の追加: `Code.gs`の地域配列を更新
-- カテゴリの追加: カテゴリ配列を更新
-- UIテーマ: `styles.html`でTailwind設定を変更
-- クラスタリング調整: `QuestionClusterer.gs`のパラメータ
+```
+qa-board/
+├── gas/                    # Google Apps Script用ファイル
+│   ├── Code.gs            # メインコード
+│   ├── SheetManager.gs    # データ管理
+│   ├── QuestionClusterer.gs # クラスタリング処理
+│   ├── TextVectorizer.gs  # TF-IDFベクトル化
+│   ├── KMeansClusterer.gs # K-means実装
+│   └── ...
+├── html/                   # フロントエンド用ファイル
+│   ├── index_gas.html     # メインHTML
+│   ├── styles.html        # CSS
+│   └── javascript.html    # JavaScript
+└── docs/                   # ドキュメント
+    ├── ML_ALGORITHM.md    # MLアルゴリズム詳細
+    └── GAS_ARCHITECTURE.md # システム設計
+```
+
+### テスト関数
+
+開発時に以下のテスト関数が利用可能：
+
+- `testSpreadsheetConnection()` - スプレッドシート接続テスト
+- `testVectorClustering()` - ベクトル化・クラスタリングテスト
+- `analyzeQuestionData()` - 質問データ分析
+- `addSimilarTestQuestions()` - テストデータ追加
+
+## 貢献方法
+
+1. このリポジトリをフォーク
+2. 機能ブランチを作成 (`git checkout -b feature/AmazingFeature`)
+3. 変更をコミット (`git commit -m 'Add some AmazingFeature'`)
+4. ブランチにプッシュ (`git push origin feature/AmazingFeature`)
+5. プルリクエストを作成
 
 ## ライセンス
 
-このプロジェクトは教育目的で作成されました。
+このプロジェクトはMITライセンスの下で公開されています。
 
-## 作成者
+## 謝辞
 
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+- Google Gemini APIチーム
+- 教育イベント参加者の皆様
+- オープンソースコミュニティ

@@ -7,7 +7,7 @@
  */
 function testSpreadsheetConnection() {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(getSpreadsheetId());
     console.log('✅ スプレッドシートに接続成功');
     console.log('スプレッドシート名:', ss.getName());
     console.log('スプレッドシートID:', ss.getId());

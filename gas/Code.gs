@@ -1,7 +1,32 @@
 // QA Board - メインコード
-// グローバル設定
-const SPREADSHEET_ID = '1Fr8mA0Kfcz_emCpFH1V7yDiytyxiuLTEcPWD0ifn_q0';
-const ADMIN_PASSWORD = 'ictedu';
+
+/**
+ * スプレッドシートIDを取得
+ */
+function getSpreadsheetId() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const spreadsheetId = scriptProperties.getProperty('SPREADSHEET_ID');
+  
+  if (!spreadsheetId) {
+    throw new Error('SPREADSHEET_IDが設定されていません。スクリプトのプロパティで設定してください。');
+  }
+  
+  return spreadsheetId;
+}
+
+/**
+ * 管理者パスワードを取得
+ */
+function getAdminPassword() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const adminPassword = scriptProperties.getProperty('ADMIN_PASSWORD');
+  
+  if (!adminPassword) {
+    throw new Error('ADMIN_PASSWORDが設定されていません。スクリプトのプロパティで設定してください。');
+  }
+  
+  return adminPassword;
+}
 
 /**
  * Webアプリのエントリーポイント（GET）
@@ -9,7 +34,6 @@ const ADMIN_PASSWORD = 'ictedu';
 function doGet(e) {
   const template = HtmlService.createTemplateFromFile('index_gas');
   template.data = {
-    spreadsheetId: SPREADSHEET_ID,
     regions: ['osaka', 'nagoya', 'fukuoka', 'hiroshima', 'tokyo'],
     categories: ['ai', 'education', 'ict', 'other']
   };
@@ -195,7 +219,7 @@ function getGeneratedQuestions(region = 'all') {
 function generateRepresentative(region, password, forceRegenerate = false) {
   try {
     // パスワード検証
-    if (password !== ADMIN_PASSWORD) {
+    if (password !== getAdminPassword()) {
       return {
         success: false,
         error: 'パスワードが正しくありません'
@@ -223,7 +247,7 @@ function generateRepresentative(region, password, forceRegenerate = false) {
  */
 function verifyPassword(password) {
   return {
-    success: password === ADMIN_PASSWORD
+    success: password === getAdminPassword()
   };
 }
 

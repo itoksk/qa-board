@@ -239,50 +239,50 @@ class QuestionClusterer {
   generateFallbackSummary(questions, category) {
     console.log(`Generating fallback summary for ${questions.length} questions in category: ${category}`);
     
-    // カテゴリ別のキーワードを抽出
+    // 具体的な意図を抽出
+    const intents = this.extractDetailedIntents(questions);
     const keywords = this.extractKeywords(questions);
-    const categoryName = this.getCategoryName(category);
-    
-    // 質問の共通パターンを分析
     const patterns = this.analyzeQuestionPatterns(questions);
-    
-    // 共通テーマを抽出
     const commonThemes = this.extractCommonThemes(questions);
     
     let summary;
     
-    // より具体的な要約を生成
-    if (commonThemes.tool && commonThemes.usage) {
-      // 特定のツールの使い方について
-      summary = `${commonThemes.tool}を${commonThemes.usage}するための方法は？`;
-    } else if (patterns.howTo > patterns.what && keywords.length > 0) {
-      // 「どのように」系で具体的なキーワードがある場合
+    // より具体的で包括的な要約を生成
+    if (intents.tools.length > 0 && intents.concerns.length > 0) {
+      // ツールと懸念事項の両方がある場合
+      const mainTool = intents.tools[0];
+      const mainConcern = intents.concerns[0];
+      summary = `${mainTool}を授業で使う際の${mainConcern}と活用方法は？`;
+    } else if (intents.methods.length > 0 && intents.targets.length > 0) {
+      // 手法と対象がある場合
+      summary = `${intents.targets[0]}における${intents.methods[0]}の実践方法は？`;
+    } else if (commonThemes.tool && commonThemes.usage) {
+      // 特定のツールの使い方
+      summary = `${commonThemes.tool}を${commonThemes.usage}する際の具体的方法と注意点は？`;
+    } else if (patterns.howTo > 0 && patterns.caution > 0) {
+      // 方法と注意点の両方が求められている
       const mainKeyword = this.selectMainKeyword(keywords, questions);
-      summary = `${categoryName}で${mainKeyword}を活用する効果的な方法は？`;
-    } else if (patterns.what > patterns.howTo && keywords.length > 0) {
-      // 「何ですか」系で具体的なキーワードがある場合
-      const mainKeyword = this.selectMainKeyword(keywords, questions);
-      summary = `${categoryName}における${mainKeyword}の基本について教えてください`;
-    } else if (patterns.caution > 0 || patterns.ethics > 0) {
-      // 注意点や倫理に関する質問が多い場合
-      summary = `${categoryName}を使用する際の注意点や倫理的配慮は？`;
+      summary = `${mainKeyword}の効果的な活用方法と留意点を教えてください`;
+    } else if (keywords.length >= 3) {
+      // 複数の具体的キーワードを統合
+      summary = `${keywords[0]}や${keywords[1]}を使った${keywords[2]}の方法は？`;
     } else if (keywords.length >= 2) {
-      // 複数のキーワードから要約
-      summary = `${categoryName}で${keywords[0]}や${keywords[1]}を活用する方法は？`;
+      // 2つのキーワードを組み合わせ
+      summary = `${keywords[0]}における${keywords[1]}の実践的な取り組みは？`;
     } else {
-      // デフォルトだが、カテゴリに応じて少し具体化
+      // カテゴリ別のより具体的なデフォルト
       const defaultQuestions = {
-        'ai': '生成AIを教育現場で効果的に活用する方法は？',
-        'education': '新しい教育手法を授業に取り入れる方法は？',
-        'ict': 'ICTツールを授業で効果的に使う方法は？',
-        'other': '教育現場での新しい取り組みについて教えてください'
+        'ai': 'ChatGPTやGeminiを授業で活用する際の方法と注意点は？',
+        'education': 'アクティブラーニングや協働学習の効果的な実践方法は？',
+        'ict': 'タブレットやデジタル教材を授業で活用する方法は？',
+        'other': '教育現場での新しい取り組みと課題解決の方法は？'
       };
-      summary = defaultQuestions[category] || `${categoryName}の活用について教えてください`;
+      summary = defaultQuestions[category] || this.createDefaultSummary(questions, category);
     }
     
-    // 30文字制限
-    if (summary.length > 30) {
-      summary = summary.substring(0, 27) + '...？';
+    // 45文字以内に調整（内容を優先）
+    if (summary.length > 45) {
+      summary = summary.substring(0, 42) + '...？';
     }
     
     console.log(`Generated fallback summary: ${summary}`);
@@ -480,5 +480,88 @@ class QuestionClusterer {
     });
     
     return mainKeyword;
+  }
+  
+  /**
+   * 詳細な意図抽出
+   */
+  extractDetailedIntents(questions) {
+    const intents = {
+      tools: [],      // 具体的なツール名
+      methods: [],    // 手法・方法
+      concerns: [],   // 懸念事項・注意点
+      targets: [],    // 対象（生徒、授業、教材など）
+      purposes: []    // 目的
+    };
+    
+    // ツール名の抽出
+    const toolPatterns = ['ChatGPT', 'Gemini', 'Claude', 'AI', '生成AI', 'タブレット', 'PC', 'ICT', 'デジタル教科書', 'オンライン'];
+    const methodPatterns = ['活用', '導入', '実践', '評価', '指導', 'アクティブラーニング', '協働学習', 'プログラミング'];
+    const concernPatterns = ['注意点', '留意点', '倫理', '著作権', 'ガイドライン', '課題', '問題点'];
+    const targetPatterns = ['授業', '生徒', '教材', '教育現場', '小学生', '中学生', '高校生'];
+    const purposePatterns = ['効果的', '円滑', '安全', '適切', '実践的'];
+    
+    questions.forEach(q => {
+      const content = q.content;
+      
+      // 各パターンをチェック
+      toolPatterns.forEach(tool => {
+        if (content.includes(tool) && !intents.tools.includes(tool)) {
+          intents.tools.push(tool);
+        }
+      });
+      
+      methodPatterns.forEach(method => {
+        if (content.includes(method) && !intents.methods.includes(method)) {
+          intents.methods.push(method);
+        }
+      });
+      
+      concernPatterns.forEach(concern => {
+        if (content.includes(concern) && !intents.concerns.includes(concern)) {
+          intents.concerns.push(concern);
+        }
+      });
+      
+      targetPatterns.forEach(target => {
+        if (content.includes(target) && !intents.targets.includes(target)) {
+          intents.targets.push(target);
+        }
+      });
+      
+      purposePatterns.forEach(purpose => {
+        if (content.includes(purpose) && !intents.purposes.includes(purpose)) {
+          intents.purposes.push(purpose);
+        }
+      });
+    });
+    
+    // 頻度順にソート
+    Object.keys(intents).forEach(key => {
+      intents[key] = intents[key].slice(0, 3); // 上位3つまで
+    });
+    
+    return intents;
+  }
+  
+  /**
+   * デフォルト要約の作成
+   */
+  createDefaultSummary(questions, category) {
+    if (questions.length === 0) {
+      return `${this.getCategoryName(category)}について教えてください`;
+    }
+    
+    // 最初と最後の質問から要素を抽出してミックス
+    const firstQ = questions[0].content;
+    const lastQ = questions[questions.length - 1].content;
+    
+    // 最初の質問から主要な名詞を、最後の質問から動詞を抽出する簡易的な方法
+    const keywords = this.extractKeywords(questions);
+    if (keywords.length >= 2) {
+      return `${keywords[0]}と${keywords[1]}の効果的な活用方法を教えてください`;
+    }
+    
+    return `${this.getCategoryName(category)}の実践的な活用方法を教えてください`;
   }
 }
