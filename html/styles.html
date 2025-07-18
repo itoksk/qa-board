@@ -53,17 +53,15 @@
         opacity: 0.5;
         cursor: not-allowed;
     }
-    .heart-icon {
-        width: 20px;
-        height: 20px;
-        color: #ec4899;
+    .like-emoji {
+        font-size: 20px;
         transition: all 0.3s ease;
+        display: inline-block;
     }
-    .like-button:hover .heart-icon {
+    .like-button:hover .like-emoji {
         transform: scale(1.15);
     }
-    .like-button.liked .heart-icon {
-        color: #ec4899;
+    .like-button.liked .like-emoji {
         filter: drop-shadow(0 0 4px rgba(236, 72, 153, 0.5));
     }
     
@@ -91,7 +89,7 @@
         }
     }
     
-    .like-button.like-animation .heart-icon {
+    .like-button.like-animation .like-emoji {
         animation: likeAnimation 0.6s ease-in-out;
     }
     

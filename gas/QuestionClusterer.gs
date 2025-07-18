@@ -136,11 +136,8 @@ class QuestionClusterer {
       );
     } catch (error) {
       console.error('Gemini API error:', error);
-      // フォールバック：最も長い質問を代表に
-      const longest = clusterQuestions.reduce((prev, current) => 
-        current.content.length > prev.content.length ? current : prev
-      );
-      summary = longest.content;
+      // フォールバック：簡易的な要約生成
+      summary = this.generateFallbackSummary(clusterQuestions, category);
     }
     
     return {
@@ -176,5 +173,100 @@ class QuestionClusterer {
       .replace(/[、。！？\s]+/g, ' ')
       .split(' ')
       .filter(w => w.length > 1);
+  }
+  
+  /**
+   * フォールバック用の簡易要約生成
+   */
+  generateFallbackSummary(questions, category) {
+    // カテゴリ別のキーワードを抽出
+    const keywords = this.extractKeywords(questions);
+    const categoryName = this.getCategoryName(category);
+    
+    // 質問の共通パターンを分析
+    const patterns = this.analyzeQuestionPatterns(questions);
+    
+    // テンプレートベースで代表質問を生成
+    if (patterns.howTo > patterns.what) {
+      // 「どのように」系の質問が多い場合
+      return `${categoryName}を効果的に活用する方法は？`;
+    } else if (patterns.what > patterns.howTo) {
+      // 「何ですか」系の質問が多い場合
+      return `${categoryName}の基本的な使い方を教えてください`;
+    } else if (keywords.length > 0) {
+      // キーワードベース
+      return `${categoryName}で${keywords[0]}をどう活用すればよいですか？`;
+    } else {
+      // デフォルトパターン
+      return `${categoryName}の活用について教えてください`;
+    }
+  }
+  
+  /**
+   * キーワード抽出
+   */
+  extractKeywords(questions) {
+    const wordCounts = {};
+    const stopWords = ['です', 'ます', 'する', 'なる', 'ある', 'いる', 'れる', 'られる', 'こと', 'もの', 'ため'];
+    
+    // 全質問からキーワードをカウント
+    questions.forEach(q => {
+      const words = this.tokenize(q.content);
+      words.forEach(word => {
+        // 3文字以上でストップワードでない単語のみカウント
+        if (word.length >= 3 && !stopWords.includes(word)) {
+          wordCounts[word] = (wordCounts[word] || 0) + 1;
+        }
+      });
+    });
+    
+    // 頻出順にソート
+    return Object.entries(wordCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(entry => entry[0]);
+  }
+  
+  /**
+   * 質問パターンの分析
+   */
+  analyzeQuestionPatterns(questions) {
+    const patterns = {
+      howTo: 0,    // 「どのように」「方法」
+      what: 0,     // 「何ですか」「とは」
+      why: 0,      // 「なぜ」「理由」
+      when: 0      // 「いつ」「タイミング」
+    };
+    
+    questions.forEach(q => {
+      const content = q.content;
+      if (content.includes('方法') || content.includes('どのように') || content.includes('どうやって')) {
+        patterns.howTo++;
+      }
+      if (content.includes('何ですか') || content.includes('とは') || content.includes('について')) {
+        patterns.what++;
+      }
+      if (content.includes('なぜ') || content.includes('理由')) {
+        patterns.why++;
+      }
+      if (content.includes('いつ') || content.includes('タイミング')) {
+        patterns.when++;
+      }
+    });
+    
+    return patterns;
+  }
+  
+  /**
+   * カテゴリ名の取得
+   */
+  getCategoryName(category) {
+    const names = {
+      'ai': '生成AI',
+      'education': '教育',
+      'ict': 'ICT',
+      'other': 'その他'
+    };
+    return names[category] || category;
   }
 }

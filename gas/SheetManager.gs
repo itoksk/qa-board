@@ -241,7 +241,7 @@ class SheetManager {
           const regionData = regionSheet.getDataRange().getValues();
           for (let j = 1; j < regionData.length; j++) {
             if (regionData[j][0] === questionId) {
-              regionSheet.getRange(j + 1, 8).setValue(currentLikes + 1);
+              regionSheet.getRange(j + 1, 9).setValue(currentLikes + 1);
               break;
             }
           }
