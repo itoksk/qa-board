@@ -1,0 +1,446 @@
+<script>
+// グローバル変数
+let currentQuestions = [];
+
+// Google Apps Script関数の呼び出し
+const GAS = {
+    submitQuestion: (data) => {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .submitQuestion(data);
+        });
+    },
+    getQuestions: (region) => {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .getQuestions(region);
+        });
+    },
+    getGeneratedQuestions: (region) => {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .getGeneratedQuestions(region);
+        });
+    },
+    generateRepresentative: (region, password, forceRegenerate) => {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .generateRepresentative(region, password, forceRegenerate);
+        });
+    },
+    addLike: (questionId) => {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler(resolve)
+                .withFailureHandler(reject)
+                .addLike(questionId);
+        });
+    }
+};
+
+// 画面表示制御
+function showQuestionForm() {
+    hideAllSections();
+    document.getElementById('questionForm').classList.remove('hidden');
+}
+
+function showQuestions() {
+    hideAllSections();
+    document.getElementById('questionList').classList.remove('hidden');
+    loadQuestions();
+}
+
+function showGeneratedQuestions() {
+    hideAllSections();
+    document.getElementById('generatedQuestions').classList.remove('hidden');
+    loadGeneratedQuestions();
+}
+
+function showAdminSection() {
+    hideAllSections();
+    document.getElementById('adminSection').classList.remove('hidden');
+}
+
+function hideAllSections() {
+    document.getElementById('questionForm').classList.add('hidden');
+    document.getElementById('questionList').classList.add('hidden');
+    document.getElementById('generatedQuestions').classList.add('hidden');
+    document.getElementById('adminSection').classList.add('hidden');
+}
+
+// 質問投稿
+async function submitQuestionForm(event) {
+    event.preventDefault();
+    
+    const button = document.getElementById('submitButton');
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.innerHTML = '<div class="loader inline-block w-5 h-5 mr-2"></div>送信中...';
+    
+    const formData = {
+        region: event.target.region.value,
+        category: event.target.category.value,
+        content: event.target.content.value,
+        author: event.target.author.value || '匿名'
+    };
+    
+    try {
+        const result = await GAS.submitQuestion(formData);
+        if (result.success) {
+            showNotification('質問を投稿しました');
+            event.target.reset();
+            // 質問一覧画面に遷移
+            setTimeout(() => {
+                showQuestions();
+            }, 1000);
+        } else {
+            alert('エラー: ' + result.error);
+        }
+    } catch (error) {
+        console.error('投稿エラー:', error);
+        alert('通信エラーが発生しました: ' + error);
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
+
+// 質問一覧読み込み
+async function loadQuestions() {
+    const container = document.getElementById('questionsContainer');
+    const region = document.getElementById('regionFilter').value;
+    
+    container.innerHTML = '<div class="text-center py-8"><div class="loader"></div><p class="mt-4 text-gray-400">質問を読み込み中...</p></div>';
+    
+    try {
+        const result = await GAS.getQuestions(region);
+        console.log('質問取得結果:', result);
+        
+        if (result.success) {
+            currentQuestions = result.questions;
+            displayQuestions(result.questions);
+        } else {
+            container.innerHTML = '<p class="text-center text-red-400">エラー: ' + result.error + '</p>';
+        }
+    } catch (error) {
+        console.error('読み込みエラー:', error);
+        container.innerHTML = '<p class="text-center text-red-400">通信エラー: ' + error + '</p>';
+    }
+}
+
+// 質問表示
+function displayQuestions(questions) {
+    const container = document.getElementById('questionsContainer');
+    
+    if (!questions || questions.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 py-8">まだ質問がありません</p>';
+        return;
+    }
+    
+    // HTMLを構築
+    const html = questions.map(q => {
+        const questionId = q.id || '';
+        const category = q.category || '';
+        const region = q.region || '';
+        const content = q.content || '';
+        const author = q.author || '匿名';
+        const timestamp = q.timestamp || new Date().toISOString();
+        const likes = q.likes || 0;
+        const processed = q.processed || false;
+        
+        return createQuestionCard(questionId, category, region, content, author, timestamp, likes, processed);
+    }).join('');
+    
+    container.innerHTML = html;
+}
+
+// 質問カードのHTML生成
+function createQuestionCard(id, category, region, content, author, timestamp, likes, processed) {
+    return `
+        <div class="glass-effect rounded-xl p-6 hover:shadow-xl transition-shadow">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <span class="inline-block px-3 py-1 bg-purple-600/20 text-purple-400 rounded-full text-sm font-medium">
+                        ${getCategoryLabel(category)}
+                    </span>
+                    <span class="inline-block px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm font-medium ml-2">
+                        ${getRegionLabel(region)}
+                    </span>
+                    ${processed ? '<span class="inline-block px-3 py-1 bg-green-600/20 text-green-400 rounded-full text-sm font-medium ml-2">処理済み</span>' : ''}
+                </div>
+                <span class="text-gray-400 text-sm">${formatDate(timestamp)}</span>
+            </div>
+            <p class="text-lg mb-2">${escapeHtml(content)}</p>
+            <div class="flex justify-between items-center">
+                <p class="text-gray-400 text-sm">投稿者: ${escapeHtml(author)}</p>
+                <button 
+                    onclick="handleLike('${id}')" 
+                    id="like-btn-${id}"
+                    class="like-button"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="heart-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    <span id="like-count-${id}" class="font-medium">${likes}</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// 代表質問読み込み
+async function loadGeneratedQuestions() {
+    const container = document.getElementById('generatedQuestionsContainer');
+    const region = document.getElementById('generatedRegionFilter').value;
+    
+    container.innerHTML = '<div class="text-center py-8"><div class="loader"></div><p class="mt-4 text-gray-400">代表質問を読み込み中...</p></div>';
+    
+    try {
+        const result = await GAS.getGeneratedQuestions(region);
+        if (result.success) {
+            displayGeneratedQuestions(result.representatives);
+        } else {
+            container.innerHTML = '<p class="text-center text-red-400">エラー: ' + result.error + '</p>';
+        }
+    } catch (error) {
+        container.innerHTML = '<p class="text-center text-red-400">通信エラー: ' + error + '</p>';
+    }
+}
+
+// 代表質問表示
+function displayGeneratedQuestions(representatives) {
+    const container = document.getElementById('generatedQuestionsContainer');
+    
+    if (!representatives || representatives.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 py-8">まだ代表質問が生成されていません</p>';
+        return;
+    }
+    
+    // 最終更新日時を表示
+    if (representatives.length > 0) {
+        const lastUpdated = document.getElementById('lastUpdated');
+        lastUpdated.textContent = '最終更新: ' + formatDate(representatives[0].generatedAt);
+    }
+    
+    const html = representatives.map(rep => createRepresentativeCard(rep)).join('');
+    container.innerHTML = html;
+}
+
+// 代表質問カードのHTML生成
+function createRepresentativeCard(rep) {
+    const sourceQuestions = rep.sourceQuestions || [];
+    
+    return `
+        <div class="glass-effect rounded-xl p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <span class="inline-block px-3 py-1 bg-purple-600/20 text-purple-400 rounded-full text-sm font-medium">
+                        ${getCategoryLabel(rep.category)}
+                    </span>
+                    <span class="inline-block px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm font-medium ml-2">
+                        ${getRegionLabel(rep.region)}
+                    </span>
+                </div>
+                <span class="text-gray-400 text-sm">${formatDate(rep.generatedAt)} 生成</span>
+            </div>
+            <h4 class="text-xl font-semibold mb-3">${escapeHtml(rep.question)}</h4>
+            <p class="text-gray-300 mb-4">この代表質問は、${rep.clusterSize}件の類似質問から生成されました。</p>
+            ${sourceQuestions.length > 0 ? `
+            <details class="text-sm">
+                <summary class="cursor-pointer text-purple-400 hover:text-purple-300">元の質問を表示</summary>
+                <ul class="mt-2 space-y-2 text-gray-400">
+                    ${sourceQuestions.map(q => `<li>• ${escapeHtml(q)}</li>`).join('')}
+                </ul>
+            </details>
+            ` : ''}
+        </div>
+    `;
+}
+
+// パスワード認証
+function showPasswordPrompt() {
+    document.getElementById('passwordModal').classList.remove('hidden');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordError').classList.add('hidden');
+    document.getElementById('passwordInput').focus();
+}
+
+function closePasswordModal() {
+    document.getElementById('passwordModal').classList.add('hidden');
+}
+
+async function checkPassword() {
+    const password = document.getElementById('passwordInput').value;
+    if (password === 'ictedu') {
+        closePasswordModal();
+        showAdminSection();
+    } else {
+        document.getElementById('passwordError').classList.remove('hidden');
+    }
+}
+
+// 代表質問生成
+async function generateRepresentativeQuestions() {
+    const button = document.getElementById('generateButton');
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.innerHTML = '<div class="loader inline-block w-5 h-5 mr-2"></div>生成中...';
+    
+    const region = document.getElementById('adminRegion').value;
+    const forceRegenerate = document.getElementById('forceRegenerate').checked;
+    
+    try {
+        const result = await GAS.generateRepresentative(region, 'ictedu', forceRegenerate);
+        const resultsDiv = document.getElementById('generationResults');
+        
+        if (result.success) {
+            resultsDiv.innerHTML = `
+                <p class="text-green-400 mb-2">生成完了しました</p>
+                <p class="text-gray-300">対象地域: ${getRegionLabel(region)}</p>
+                <p class="text-gray-300">処理した質問数: ${result.results.processedCount}</p>
+                <p class="text-gray-300">生成した代表質問数: ${result.results.representativeCount}</p>
+                ${result.results.message ? `<p class="text-gray-300 mt-2">${result.results.message}</p>` : ''}
+            `;
+            showNotification('代表質問の生成が完了しました');
+        } else {
+            resultsDiv.innerHTML = `<p class="text-red-400">エラー: ${result.error}</p>`;
+        }
+    } catch (error) {
+        document.getElementById('generationResults').innerHTML = 
+            `<p class="text-red-400">通信エラー: ${error}</p>`;
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
+
+// いいね処理
+async function handleLike(questionId) {
+    console.log('いいねクリック:', questionId);
+    
+    const button = document.getElementById(`like-btn-${questionId}`);
+    const countSpan = document.getElementById(`like-count-${questionId}`);
+    
+    if (!button || !countSpan) {
+        console.error('要素が見つかりません');
+        return;
+    }
+    
+    // ボタンを一時的に無効化
+    button.disabled = true;
+    button.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    try {
+        const result = await GAS.addLike(questionId);
+        
+        if (result.success) {
+            // いいね数を更新
+            countSpan.textContent = result.newLikeCount;
+            
+            // アニメーション効果
+            button.classList.add('scale-110');
+            setTimeout(() => {
+                button.classList.remove('scale-110');
+            }, 300);
+            
+            // ハートを塗りつぶし
+            const svg = button.querySelector('svg');
+            svg.setAttribute('fill', 'currentColor');
+            
+            showNotification('いいねしました！');
+        } else {
+            alert('エラー: ' + result.error);
+        }
+    } catch (error) {
+        console.error('いいねエラー:', error);
+        alert('通信エラー: ' + error);
+    } finally {
+        // ボタンを再度有効化
+        setTimeout(() => {
+            button.disabled = false;
+            button.classList.remove('opacity-50', 'cursor-not-allowed');
+        }, 1000);
+    }
+}
+
+// ユーティリティ関数
+function getCategoryLabel(category) {
+    const labels = {
+        'ai': '生成AI',
+        'education': '教育',
+        'ict': 'ICT',
+        'other': 'その他'
+    };
+    return labels[category] || category;
+}
+
+function getRegionLabel(region) {
+    const labels = {
+        'osaka': '大阪',
+        'nagoya': '名古屋',
+        'fukuoka': '福岡',
+        'hiroshima': '広島',
+        'tokyo': '東京',
+        'all': '全地域'
+    };
+    return labels[region] || region;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return '今';
+    if (diff < 3600000) return Math.floor(diff / 60000) + '分前';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + '時間前';
+    
+    return date.toLocaleDateString('ja-JP') + ' ' + 
+           date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showNotification(message) {
+    const notification = document.getElementById('successNotification');
+    const messageEl = document.getElementById('successMessage');
+    
+    messageEl.textContent = message;
+    notification.classList.remove('hidden');
+    notification.classList.remove('translate-x-full');
+    
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            notification.classList.add('hidden');
+        }, 300);
+    }, 3000);
+}
+
+// Enterキーでパスワード認証
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('passwordInput');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    }
+});
+</script>
