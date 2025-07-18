@@ -3,8 +3,18 @@
  */
 class QuestionClusterer {
   constructor() {
-    this.geminiService = new GeminiService();
     this.sheetManager = new SheetManager();
+    
+    // GeminiServiceの初期化を試みる
+    try {
+      this.geminiService = new GeminiService();
+    } catch (error) {
+      console.error('GeminiService initialization failed:', error);
+      this.geminiService = null;
+    }
+    
+    this.vectorizer = new TextVectorizer();
+    this.kmeans = new KMeansClusterer();
   }
   
   /**
@@ -88,65 +98,118 @@ class QuestionClusterer {
   }
   
   /**
-   * 質問のクラスタリング（簡易版）
+   * 質問のクラスタリング（ML_ALGORITHM.mdに基づく実装）
    */
   clusterQuestions(questions) {
-    // 質問数に応じてクラスタ数を決定
-    const clusterCount = Math.min(Math.ceil(questions.length / 5), 5);
-    
     if (questions.length <= 3) {
       // 質問が少ない場合は1つのクラスタに
       return [questions];
     }
     
-    // 簡易的な長さベースのクラスタリング
-    // 実際の実装では、ここでより高度な類似度計算を行う
-    const sorted = [...questions].sort((a, b) => 
-      a.content.length - b.content.length
-    );
-    
-    const clusters = [];
-    const itemsPerCluster = Math.ceil(questions.length / clusterCount);
-    
-    for (let i = 0; i < clusterCount; i++) {
-      const start = i * itemsPerCluster;
-      const end = Math.min(start + itemsPerCluster, questions.length);
-      const cluster = sorted.slice(start, end);
-      if (cluster.length > 0) {
-        clusters.push(cluster);
+    try {
+      // 1. テキストのベクトル化
+      const texts = questions.map(q => q.content);
+      this.vectorizer.fit(texts);
+      const vectors = this.vectorizer.transform(texts);
+      
+      // 2. 最適なクラスタ数を決定
+      const optimalK = this.kmeans.findOptimalClusters(vectors, 2, Math.min(10, Math.floor(questions.length / 2)));
+      console.log(`Optimal clusters: ${optimalK} for ${questions.length} questions`);
+      
+      // 3. K-Meansクラスタリング実行
+      const { labels, centers } = this.kmeans.cluster(vectors, optimalK);
+      
+      // 4. クラスタごとに質問をグループ化
+      const clusters = [];
+      for (let i = 0; i < optimalK; i++) {
+        const clusterQuestions = [];
+        labels.forEach((label, idx) => {
+          if (label === i) {
+            clusterQuestions.push({
+              ...questions[idx],
+              vector: vectors[idx],
+              distanceToCenter: this.kmeans.euclideanDistance(vectors[idx], centers[i])
+            });
+          }
+        });
+        
+        if (clusterQuestions.length > 0) {
+          // 中心点に近い順にソート
+          clusterQuestions.sort((a, b) => a.distanceToCenter - b.distanceToCenter);
+          clusters.push(clusterQuestions);
+        }
       }
+      
+      console.log(`Created ${clusters.length} clusters`);
+      return clusters;
+      
+    } catch (error) {
+      console.error('Clustering error:', error);
+      // フォールバック: 簡易的なグループ化
+      const clusterSize = Math.ceil(questions.length / 3);
+      const clusters = [];
+      
+      for (let i = 0; i < questions.length; i += clusterSize) {
+        clusters.push(questions.slice(i, i + clusterSize));
+      }
+      
+      return clusters;
     }
-    
-    return clusters;
   }
   
   /**
-   * 代表質問生成
+   * 代表質問生成（ML_ALGORITHM.mdに基づく実装）
    */
   generateRepresentative(clusterQuestions, category, region) {
     const questionTexts = clusterQuestions.map(q => q.content);
     
-    // Gemini APIで要約
-    let summary;
-    try {
-      summary = this.geminiService.generateSummary(
-        questionTexts,
-        category,
-        region
-      );
-    } catch (error) {
-      console.error('Gemini API error:', error);
-      // フォールバック：簡易的な要約生成
-      summary = this.generateFallbackSummary(clusterQuestions, category);
+    // 代表質問の選定方法
+    let representativeQuestion;
+    let method = 'centroid'; // デフォルトは重心最近傍法
+    
+    // Gemini APIの使用を試みる
+    if (this.geminiService) {
+      try {
+        representativeQuestion = this.geminiService.generateSummary(
+          questionTexts,
+          category,
+          region
+        );
+        method = 'gemini';
+        console.log('Generated summary using Gemini:', representativeQuestion);
+      } catch (error) {
+        console.error('Gemini API error:', error);
+        representativeQuestion = null;
+      }
     }
+    
+    // Geminiが使えない場合のフォールバック処理
+    if (!representativeQuestion) {
+      // フォールバック1: 重心最近傍法
+      // クラスタリング時に既に中心点に近い順でソートされているため、最初の質問を使用
+      if (clusterQuestions.length > 0 && clusterQuestions[0].content) {
+        representativeQuestion = clusterQuestions[0].content;
+        console.log('Using centroid method:', representativeQuestion);
+      } else {
+        // フォールバック2: 簡易的な要約生成
+        representativeQuestion = this.generateFallbackSummary(clusterQuestions, category);
+        method = 'fallback';
+        console.log('Using fallback method:', representativeQuestion);
+      }
+    }
+    
+    // 重要度スコアの計算
+    const importanceScore = this.calculateImportanceScore(clusterQuestions);
     
     return {
       region: region,
       category: category,
-      question: summary,
+      question: representativeQuestion,
       clusterSize: clusterQuestions.length,
       sourceIds: clusterQuestions.map(q => q.id),
-      sourceQuestions: questionTexts // デバッグ用
+      sourceQuestions: questionTexts,
+      method: method,
+      importanceScore: importanceScore
     };
   }
   
@@ -268,5 +331,25 @@ class QuestionClusterer {
       'other': 'その他'
     };
     return names[category] || category;
+  }
+  
+  /**
+   * 重要度スコアの計算（ML_ALGORITHM.mdに基づく）
+   */
+  calculateImportanceScore(clusterQuestions) {
+    let score = 0;
+    
+    // クラスタサイズ（頻度）
+    score += clusterQuestions.length * 10;
+    
+    // いいね数
+    const totalLikes = clusterQuestions.reduce((sum, q) => sum + (q.likes || 0), 0);
+    score += totalLikes;
+    
+    // 処理済みフラグ（緊急度の代替）
+    const processedCount = clusterQuestions.filter(q => !q.processed).length;
+    score += processedCount * 5;
+    
+    return score;
   }
 }

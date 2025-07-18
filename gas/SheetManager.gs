@@ -158,6 +158,8 @@ class SheetManager {
    * 代表質問保存
    */
   saveRepresentativeQuestions(representatives) {
+    console.log(`Saving ${representatives.length} representative questions`);
+    
     const rows = representatives.map(rep => [
       Utilities.getUuid(),
       rep.region,
@@ -166,7 +168,7 @@ class SheetManager {
       rep.clusterSize,
       rep.sourceIds.join(','),
       new Date().toISOString(),
-      'Gemini API'
+      rep.method || 'fallback'  // 実際の生成方法を記録
     ]);
     
     if (rows.length > 0) {
@@ -177,6 +179,8 @@ class SheetManager {
         rows.length,
         rows[0].length
       ).setValues(rows);
+      
+      console.log(`Saved representatives to sheet starting at row ${startRow}`);
     }
   }
   
@@ -184,19 +188,40 @@ class SheetManager {
    * 質問の処理済みフラグ更新
    */
   updateProcessedFlags(questionIds) {
+    console.log(`Updating processed flags for ${questionIds.length} questions`);
+    
     const data = this.questionSheet.getDataRange().getValues();
     const updates = [];
     
     for (let i = 1; i < data.length; i++) {
       if (questionIds.includes(data[i][0])) {
-        updates.push([i + 1, 8, true]); // 行番号、処理済み列、値
+        updates.push([i + 1, 8, true]); // 行番号、処理済み列（8列目）、値
+        
+        // 地域別シートも更新
+        const region = data[i][1];
+        const regionName = this.getRegionName(region);
+        const regionSheet = this.spreadsheet.getSheetByName(`質問_${regionName}`);
+        
+        if (regionSheet) {
+          const regionData = regionSheet.getDataRange().getValues();
+          for (let j = 1; j < regionData.length; j++) {
+            if (regionData[j][0] === data[i][0]) {
+              regionSheet.getRange(j + 1, 8).setValue(true);
+              break;
+            }
+          }
+        }
       }
     }
+    
+    console.log(`Found ${updates.length} questions to update`);
     
     // バッチ更新
     updates.forEach(update => {
       this.questionSheet.getRange(update[0], update[1]).setValue(update[2]);
     });
+    
+    console.log('Processed flags updated successfully');
   }
   
   /**
