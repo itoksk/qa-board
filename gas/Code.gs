@@ -163,6 +163,16 @@ function getGeneratedQuestions(region = 'all') {
     const sheetManager = new SheetManager();
     const representatives = sheetManager.getRepresentativeQuestions(region);
     
+    // 各代表質問にソース質問の内容を追加
+    representatives.forEach(rep => {
+      if (rep.sourceIds && rep.sourceIds.length > 0) {
+        const sourceQuestions = sheetManager.getQuestionsByIds(rep.sourceIds);
+        rep.sourceQuestions = sourceQuestions.map(q => q.content || '');
+      } else {
+        rep.sourceQuestions = [];
+      }
+    });
+    
     // 最新順にソート
     representatives.sort((a, b) => new Date(b.generatedAt) - new Date(a.generatedAt));
     

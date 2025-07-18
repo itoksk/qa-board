@@ -270,6 +270,34 @@ class SheetManager {
   }
   
   /**
+   * 複数のIDから質問を取得
+   */
+  getQuestionsByIds(ids) {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+    
+    const sheet = this.spreadsheet.getSheetByName(this.mainSheetName);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    const questions = [];
+    for (let i = 1; i < data.length; i++) {
+      const id = data[i][0];
+      if (ids.includes(id)) {
+        const question = {};
+        headers.forEach((header, index) => {
+          const key = this.toCamelCase(header);
+          question[key] = data[i][index];
+        });
+        questions.push(question);
+      }
+    }
+    
+    return questions;
+  }
+  
+  /**
    * ヘッダー名をキャメルケースに変換
    */
   toCamelCase(str) {
