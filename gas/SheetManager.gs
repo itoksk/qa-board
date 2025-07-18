@@ -326,20 +326,32 @@ class SheetManager {
    * ヘッダー名をキャメルケースに変換
    */
   toCamelCase(str) {
+    // 特定のマッピングを優先
+    const mapping = {
+      'ID': 'id',
+      '地域': 'region',
+      'カテゴリ': 'category',
+      '質問内容': 'content',
+      '投稿者': 'author',
+      'タイムスタンプ': 'timestamp',
+      'ステータス': 'status',
+      '処理済み': 'processed',
+      'いいね数': 'likes',
+      '代表質問': 'question',
+      'クラスタサイズ': 'clusterSize',
+      '元質問ID': 'sourceIds',
+      '生成日時': 'generatedAt',
+      '生成方法': 'method'
+    };
+    
+    // マッピングに存在する場合はそれを使用
+    if (mapping[str]) {
+      return mapping[str];
+    }
+    
     // 日本語の場合はそのまま小文字に
     if (/[ぁ-んァ-ヶｱ-ﾝﾞﾟ一-龠]/.test(str)) {
-      const mapping = {
-        'ID': 'id',
-        '地域': 'region',
-        'カテゴリ': 'category',
-        '質問内容': 'content',
-        '投稿者': 'author',
-        'タイムスタンプ': 'timestamp',
-        'ステータス': 'status',
-        '処理済み': 'processed',
-        'いいね数': 'likes'
-      };
-      return mapping[str] || str.toLowerCase();
+      return str.toLowerCase();
     }
     
     // 英語の場合は通常のキャメルケース変換

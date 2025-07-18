@@ -244,3 +244,125 @@ function runFullDiagnostics() {
   
   console.log('\n========== 診断完了 ==========');
 }
+
+/**
+ * いいね機能のテスト
+ */
+function testLikeFunction() {
+  console.log('=== いいね機能テスト開始 ===');
+  
+  try {
+    // 1. テスト質問を追加
+    const testQuestion = {
+      id: Utilities.getUuid(),
+      region: 'tokyo',
+      category: 'ai',
+      content: 'いいねテスト用質問: ' + new Date().toLocaleString('ja-JP'),
+      author: 'テストユーザー',
+      timestamp: new Date().toISOString(),
+      status: 'new',
+      processed: false,
+      likes: 0
+    };
+    
+    console.log('\n1. テスト質問を追加');
+    console.log('質問ID:', testQuestion.id);
+    
+    const sheetManager = new SheetManager();
+    sheetManager.addQuestion(testQuestion);
+    
+    // 2. 質問が追加されたか確認
+    console.log('\n2. 質問の追加を確認');
+    const questions = sheetManager.getQuestions('all');
+    const addedQuestion = questions.find(q => q.id === testQuestion.id);
+    
+    if (addedQuestion) {
+      console.log('✅ 質問が正常に追加されました');
+      console.log('追加された質問:', addedQuestion);
+    } else {
+      console.log('❌ 質問が見つかりません');
+      return;
+    }
+    
+    // 3. いいねを実行
+    console.log('\n3. いいね機能をテスト');
+    console.log('いいね前のカウント:', addedQuestion.likes);
+    
+    const result = addLike(testQuestion.id);
+    console.log('いいね実行結果:', result);
+    
+    // 4. いいね後の状態を確認
+    console.log('\n4. いいね後の状態確認');
+    const updatedQuestions = sheetManager.getQuestions('all');
+    const updatedQuestion = updatedQuestions.find(q => q.id === testQuestion.id);
+    
+    if (updatedQuestion) {
+      console.log('いいね後のカウント:', updatedQuestion.likes);
+      if (updatedQuestion.likes > addedQuestion.likes) {
+        console.log('✅ いいね機能が正常に動作しています');
+      } else {
+        console.log('❌ いいねカウントが増えていません');
+      }
+    } else {
+      console.log('❌ 更新後の質問が見つかりません');
+    }
+    
+  } catch (error) {
+    console.error('❌ テスト中にエラーが発生しました:', error);
+  }
+  
+  console.log('\n=== いいね機能テスト完了 ===');
+}
+
+/**
+ * IDの形式を確認
+ */
+function checkIdFormat() {
+  console.log('=== IDフォーマット確認 ===');
+  
+  try {
+    const sheetManager = new SheetManager();
+    
+    // toCamelCase関数のテスト
+    console.log('\n--- toCamelCase関数のテスト ---');
+    const testHeaders = ['ID', '地域', 'カテゴリ', '質問内容', 'いいね数'];
+    testHeaders.forEach(header => {
+      console.log(`"${header}" → "${sheetManager.toCamelCase(header)}"`);
+    });
+    
+    const questions = sheetManager.getQuestions('all');
+    
+    console.log('\n質問数:', questions.length);
+    
+    if (questions.length > 0) {
+      console.log('\n最初の5件のID情報:');
+      questions.slice(0, 5).forEach((q, i) => {
+        console.log(`${i + 1}. ID: "${q.id}"`);
+        console.log(`   Type: ${typeof q.id}`);
+        console.log(`   Length: ${q.id ? q.id.length : 0}`);
+        console.log(`   内容: ${q.content ? q.content.substring(0, 30) + '...' : '(内容なし)'}`);
+      });
+    }
+    
+    // スプレッドシートから直接データを取得
+    console.log('\n=== スプレッドシートの生データ ===');
+    const sheet = sheetManager.questionSheet;
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length > 1) {
+      console.log('ヘッダー:', data[0]);
+      console.log('\n最初の3行のデータ:');
+      for (let i = 1; i <= Math.min(3, data.length - 1); i++) {
+        console.log(`行${i + 1}:`);
+        data[0].forEach((header, j) => {
+          console.log(`  ${header}: "${data[i][j]}" (Type: ${typeof data[i][j]})`);
+        });
+      }
+    }
+    
+  } catch (error) {
+    console.error('エラー:', error);
+  }
+  
+  console.log('\n=== IDフォーマット確認完了 ===');
+}

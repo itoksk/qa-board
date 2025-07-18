@@ -54,11 +54,13 @@ class QuestionClusterer {
       // 各クラスタから代表質問生成
       for (const cluster of clusters) {
         if (cluster.length > 0) {
+          console.log(`Processing cluster with ${cluster.length} questions in category: ${category}`);
           const representative = this.generateRepresentative(
             cluster,
             category,
             region
           );
+          console.log('Generated representative:', representative);
           allRepresentatives.push(representative);
         }
       }
@@ -242,6 +244,8 @@ class QuestionClusterer {
    * フォールバック用の簡易要約生成
    */
   generateFallbackSummary(questions, category) {
+    console.log(`Generating fallback summary for ${questions.length} questions in category: ${category}`);
+    
     // カテゴリ別のキーワードを抽出
     const keywords = this.extractKeywords(questions);
     const categoryName = this.getCategoryName(category);
@@ -249,20 +253,47 @@ class QuestionClusterer {
     // 質問の共通パターンを分析
     const patterns = this.analyzeQuestionPatterns(questions);
     
-    // テンプレートベースで代表質問を生成
-    if (patterns.howTo > patterns.what) {
-      // 「どのように」系の質問が多い場合
-      return `${categoryName}を効果的に活用する方法は？`;
-    } else if (patterns.what > patterns.howTo) {
-      // 「何ですか」系の質問が多い場合
-      return `${categoryName}の基本的な使い方を教えてください`;
-    } else if (keywords.length > 0) {
-      // キーワードベース
-      return `${categoryName}で${keywords[0]}をどう活用すればよいですか？`;
+    // 共通テーマを抽出
+    const commonThemes = this.extractCommonThemes(questions);
+    
+    let summary;
+    
+    // より具体的な要約を生成
+    if (commonThemes.tool && commonThemes.usage) {
+      // 特定のツールの使い方について
+      summary = `${commonThemes.tool}を${commonThemes.usage}するための方法は？`;
+    } else if (patterns.howTo > patterns.what && keywords.length > 0) {
+      // 「どのように」系で具体的なキーワードがある場合
+      const mainKeyword = this.selectMainKeyword(keywords, questions);
+      summary = `${categoryName}で${mainKeyword}を活用する効果的な方法は？`;
+    } else if (patterns.what > patterns.howTo && keywords.length > 0) {
+      // 「何ですか」系で具体的なキーワードがある場合
+      const mainKeyword = this.selectMainKeyword(keywords, questions);
+      summary = `${categoryName}における${mainKeyword}の基本について教えてください`;
+    } else if (patterns.caution > 0 || patterns.ethics > 0) {
+      // 注意点や倫理に関する質問が多い場合
+      summary = `${categoryName}を使用する際の注意点や倫理的配慮は？`;
+    } else if (keywords.length >= 2) {
+      // 複数のキーワードから要約
+      summary = `${categoryName}で${keywords[0]}や${keywords[1]}を活用する方法は？`;
     } else {
-      // デフォルトパターン
-      return `${categoryName}の活用について教えてください`;
+      // デフォルトだが、カテゴリに応じて少し具体化
+      const defaultQuestions = {
+        'ai': '生成AIを教育現場で効果的に活用する方法は？',
+        'education': '新しい教育手法を授業に取り入れる方法は？',
+        'ict': 'ICTツールを授業で効果的に使う方法は？',
+        'other': '教育現場での新しい取り組みについて教えてください'
+      };
+      summary = defaultQuestions[category] || `${categoryName}の活用について教えてください`;
     }
+    
+    // 30文字制限
+    if (summary.length > 30) {
+      summary = summary.substring(0, 27) + '...？';
+    }
+    
+    console.log(`Generated fallback summary: ${summary}`);
+    return summary;
   }
   
   /**
@@ -298,12 +329,14 @@ class QuestionClusterer {
       howTo: 0,    // 「どのように」「方法」
       what: 0,     // 「何ですか」「とは」
       why: 0,      // 「なぜ」「理由」
-      when: 0      // 「いつ」「タイミング」
+      when: 0,     // 「いつ」「タイミング」
+      caution: 0,  // 「注意」「気をつける」
+      ethics: 0    // 「倫理」「モラル」
     };
     
     questions.forEach(q => {
       const content = q.content;
-      if (content.includes('方法') || content.includes('どのように') || content.includes('どうやって')) {
+      if (content.includes('方法') || content.includes('どのように') || content.includes('どうやって') || content.includes('どう')) {
         patterns.howTo++;
       }
       if (content.includes('何ですか') || content.includes('とは') || content.includes('について')) {
@@ -314,6 +347,12 @@ class QuestionClusterer {
       }
       if (content.includes('いつ') || content.includes('タイミング')) {
         patterns.when++;
+      }
+      if (content.includes('注意') || content.includes('気をつける') || content.includes('留意')) {
+        patterns.caution++;
+      }
+      if (content.includes('倫理') || content.includes('モラル') || content.includes('倫理的')) {
+        patterns.ethics++;
       }
     });
     
@@ -351,5 +390,102 @@ class QuestionClusterer {
     score += processedCount * 5;
     
     return score;
+  }
+  
+  /**
+   * 共通テーマの抽出
+   */
+  extractCommonThemes(questions) {
+    const themes = {
+      tool: null,
+      usage: null
+    };
+    
+    // ツール名の検出
+    const tools = ['ChatGPT', 'Gemini', 'Claude', 'Copilot', 'AI', 'ICT', 'タブレット', 'PC', 'パソコン'];
+    const toolCounts = {};
+    
+    questions.forEach(q => {
+      tools.forEach(tool => {
+        if (q.content.includes(tool)) {
+          toolCounts[tool] = (toolCounts[tool] || 0) + 1;
+        }
+      });
+    });
+    
+    // 最も頻出するツールを選択
+    let maxCount = 0;
+    Object.entries(toolCounts).forEach(([tool, count]) => {
+      if (count > maxCount && count >= questions.length / 2) {
+        maxCount = count;
+        themes.tool = tool;
+      }
+    });
+    
+    // 使用方法の検出
+    const usagePatterns = [
+      { pattern: '授業', usage: '授業で活用' },
+      { pattern: '教材', usage: '教材作成に活用' },
+      { pattern: '評価', usage: '評価に活用' },
+      { pattern: '生徒', usage: '生徒指導で活用' },
+      { pattern: '保護者', usage: '保護者対応で活用' }
+    ];
+    
+    const usageCounts = {};
+    questions.forEach(q => {
+      usagePatterns.forEach(({ pattern, usage }) => {
+        if (q.content.includes(pattern)) {
+          usageCounts[usage] = (usageCounts[usage] || 0) + 1;
+        }
+      });
+    });
+    
+    // 最も頻出する使用方法を選択
+    maxCount = 0;
+    Object.entries(usageCounts).forEach(([usage, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        themes.usage = usage;
+      }
+    });
+    
+    return themes;
+  }
+  
+  /**
+   * メインキーワードの選択
+   */
+  selectMainKeyword(keywords, questions) {
+    // キーワードの重要度を計算
+    const keywordScores = {};
+    
+    keywords.forEach(keyword => {
+      let score = 0;
+      questions.forEach(q => {
+        if (q.content.includes(keyword)) {
+          // タイトルに近い位置にあるほど高スコア
+          const position = q.content.indexOf(keyword);
+          score += (100 - position) / 100;
+          
+          // 複数回出現する場合は追加スコア
+          const count = (q.content.match(new RegExp(keyword, 'g')) || []).length;
+          score += count * 0.5;
+        }
+      });
+      keywordScores[keyword] = score;
+    });
+    
+    // 最高スコアのキーワードを返す
+    let maxScore = 0;
+    let mainKeyword = keywords[0] || '';
+    
+    Object.entries(keywordScores).forEach(([keyword, score]) => {
+      if (score > maxScore) {
+        maxScore = score;
+        mainKeyword = keyword;
+      }
+    });
+    
+    return mainKeyword;
   }
 }

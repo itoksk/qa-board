@@ -103,12 +103,8 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
       console.error('Gemini API Error:', error);
       console.error('Questions:', questions);
       
-      // フォールバック：最初の質問を短縮して返す
-      const fallback = questions[0] || 'この分野について教えてください';
-      if (fallback.length > 30) {
-        return fallback.substring(0, 27) + '...？';
-      }
-      return fallback;
+      // エラーを再スローして、呼び出し元でフォールバック処理を行う
+      throw error;
     }
   }
   

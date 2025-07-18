@@ -323,8 +323,6 @@ async function generateRepresentativeQuestions() {
 
 // いいね処理
 async function handleLike(questionId) {
-    console.log('いいねクリック:', questionId);
-    
     const button = document.getElementById(`like-btn-${questionId}`);
     const countSpan = document.getElementById(`like-count-${questionId}`);
     const isLiked = localStorage.getItem(`liked_${questionId}`) === 'true';
