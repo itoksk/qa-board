@@ -20,8 +20,8 @@ class QuestionClusterer {
   /**
    * 質問処理メイン
    */
-  processQuestions(region, forceRegenerate) {
-    console.log(`Processing questions for region: ${region}, force: ${forceRegenerate}`);
+  processQuestions(region, forceRegenerate, crossCategory = true) {
+    console.log(`Processing questions for region: ${region}, force: ${forceRegenerate}, crossCategory: ${crossCategory}`);
     
     // 質問取得
     let questions = this.sheetManager.getQuestions(region);
@@ -39,29 +39,53 @@ class QuestionClusterer {
       };
     }
     
-    // カテゴリ別にグループ化
-    const categoryGroups = this.groupByCategory(questions);
-    
-    // 各カテゴリ内でクラスタリング
     const allRepresentatives = [];
     
-    for (const [category, categoryQuestions] of Object.entries(categoryGroups)) {
-      if (categoryQuestions.length === 0) continue;
+    if (crossCategory) {
+      // カテゴリをまたいでクラスタリング
+      console.log('カテゴリをまたいでクラスタリングを実行');
+      const clusters = this.clusterQuestions(questions);
       
-      // 簡易的な類似度ベースのグループ化
-      const clusters = this.clusterQuestions(categoryQuestions);
-      
-      // 各クラスタから代表質問生成
       for (const cluster of clusters) {
         if (cluster.length > 0) {
-          console.log(`Processing cluster with ${cluster.length} questions in category: ${category}`);
+          // クラスタ内の主要カテゴリを決定
+          const categoryCount = {};
+          cluster.forEach(q => {
+            categoryCount[q.category] = (categoryCount[q.category] || 0) + 1;
+          });
+          const mainCategory = Object.entries(categoryCount)
+            .sort((a, b) => b[1] - a[1])[0][0];
+          
+          console.log(`Processing cluster with ${cluster.length} questions (main category: ${mainCategory})`);
           const representative = this.generateRepresentative(
             cluster,
-            category,
+            mainCategory,
             region
           );
           console.log('Generated representative:', representative);
           allRepresentatives.push(representative);
+        }
+      }
+    } else {
+      // 従来のカテゴリ別処理
+      const categoryGroups = this.groupByCategory(questions);
+      
+      for (const [category, categoryQuestions] of Object.entries(categoryGroups)) {
+        if (categoryQuestions.length === 0) continue;
+        
+        const clusters = this.clusterQuestions(categoryQuestions);
+        
+        for (const cluster of clusters) {
+          if (cluster.length > 0) {
+            console.log(`Processing cluster with ${cluster.length} questions in category: ${category}`);
+            const representative = this.generateRepresentative(
+              cluster,
+              category,
+              region
+            );
+            console.log('Generated representative:', representative);
+            allRepresentatives.push(representative);
+          }
         }
       }
     }

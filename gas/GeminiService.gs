@@ -22,26 +22,28 @@ class GeminiService {
     const categoryName = this.getCategoryDisplayName(category);
     
     const prompt = `あなたは教育現場の質問を分析し、統合する専門家です。
-以下は${regionName}地域の「${categoryName}」カテゴリーに関する${questions.length}件の質問です。
+以下は${questions.length}件の質問です。これらの質問の内容をよく分析し、質問者が本当に知りたがっていることを理解してください。
 
 【質問群】
 ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
 【分析タスク】
-1. 各質問の具体的な意図を理解してください
-2. 共通するテーマと個別の重要な視点を特定してください
-3. すべての質問者の関心事を包含する代表質問を作成してください
+1. 各質問の具体的な意図と背後にある懸念を理解してください
+2. 質問間の共通点と相違点を見つけてください
+3. すべての質問者の関心事を統合した代表質問を作成してください
 
 【代表質問の要件】
-- 35-45文字程度（内容の充実を優先）
+- 文字数制限なし（内容の充実を最優先）
 - 具体的なツール名（ChatGPT、Gemini等）や手法名は残す
-- 複数の視点を「〜しながら〜する方法」「〜における〜と〜」のように統合
-- 実践的で具体的な内容（「効果的な活用」ではなく「授業での活用と注意点」など）
-- 質問形式（〜ですか？／〜でしょうか？）
+- 複数の観点を含む場合は「〜と〜の比較」「〜における〜と〜」のように統合
+- 実践的で具体的な内容にする
+- 自然な日本語の質問形式で終わる
+- カテゴリ名にとらわれず、実際の質問内容に基づいて生成する
 
-【例】
-悪い例：「生成AIを教育現場でどう活用できますか？」（一般的すぎる）
-良い例：「ChatGPTを授業で活用する際の具体的方法と注意点は？」（具体的）
+【重要】
+- 質問の本質を捉えることを最優先にしてください
+- 地域名やカテゴリ名を無理に含める必要はありません
+- 質問者が実際に聞きたいことを正確に反映してください
 
 代表質問：`;
 
@@ -60,7 +62,7 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
             temperature: 0.7,
             topK: 40,
             topP: 0.8,
-            maxOutputTokens: 100,
+            maxOutputTokens: 200,
             candidateCount: 1
           },
           safetySettings: [
@@ -98,11 +100,7 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
       
       const generatedText = result.candidates[0].content.parts[0].text.trim();
       
-      // 30文字を超える場合は切り詰め
-      if (generatedText.length > 30) {
-        return generatedText.substring(0, 27) + '...？';
-      }
-      
+      // 文字数制限を撤廃し、完全な質問を返す
       return generatedText;
       
     } catch (error) {

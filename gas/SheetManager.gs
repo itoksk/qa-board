@@ -48,6 +48,12 @@ class SheetManager {
       headerRange.setBackground('#6366f1');
       headerRange.setFontColor('#ffffff');
       headerRange.setFontWeight('bold');
+      
+      // 代表質問シートの場合、質問列を幅広に設定
+      if (sheetName === '代表質問') {
+        sheet.setColumnWidth(3, 500); // 代表質問列を500pxに
+        sheet.setColumnWidth(6, 300); // 元質問ID列を300pxに
+      }
       sheet.setFrozenRows(1);
       
       // 列幅の自動調整
