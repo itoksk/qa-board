@@ -282,17 +282,17 @@ class QuestionClusterer {
       summary = `${intents.targets[0]}における${intents.methods[0]}の実践方法は？`;
     } else if (commonThemes.tool && commonThemes.usage) {
       // 特定のツールの使い方
-      summary = `${commonThemes.tool}を${commonThemes.usage}する際の具体的方法と注意点は？`;
+      summary = `${commonThemes.tool}を${commonThemes.usage}する際の方法と注意点は？`;
     } else if (patterns.howTo > 0 && patterns.caution > 0) {
       // 方法と注意点の両方が求められている
       const mainKeyword = this.selectMainKeyword(keywords, questions);
-      summary = `${mainKeyword}の効果的な活用方法と留意点を教えてください`;
+      summary = `${mainKeyword}の効果的な活用方法と留意点は？`;
     } else if (keywords.length >= 3) {
       // 複数の具体的キーワードを統合
       summary = `${keywords[0]}や${keywords[1]}を使った${keywords[2]}の方法は？`;
     } else if (keywords.length >= 2) {
       // 2つのキーワードを組み合わせ
-      summary = `${keywords[0]}における${keywords[1]}の実践的な取り組みは？`;
+      summary = `${keywords[0]}における${keywords[1]}の実践方法は？`;
     } else {
       // カテゴリ別のより具体的なデフォルト
       const defaultQuestions = {
@@ -304,9 +304,10 @@ class QuestionClusterer {
       summary = defaultQuestions[category] || this.createDefaultSummary(questions, category);
     }
     
-    // 45文字以内に調整（内容を優先）
-    if (summary.length > 45) {
-      summary = summary.substring(0, 42) + '...？';
+    // 文字数制限を撤廃し、完全な質問を保持
+    // 質問が「？」で終わっていない場合は追加
+    if (!summary.endsWith('？') && !summary.endsWith('?')) {
+      summary += '？';
     }
     
     console.log(`Generated fallback summary: ${summary}`);

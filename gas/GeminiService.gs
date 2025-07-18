@@ -28,24 +28,26 @@ class GeminiService {
 ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
 【分析タスク】
-1. 各質問の具体的な意図と背後にある懸念を理解してください
-2. 質問間の共通点と相違点を見つけてください
-3. すべての質問者の関心事を統合した代表質問を作成してください
+1. 各質問の核心となる意図を抽出してください
+2. 共通するキーワードやテーマを特定してください
+3. すべての意図を網羅した、簡潔で的確な代表質問を作成してください
 
 【代表質問の要件】
-- 文字数制限なし（内容の充実を最優先）
+- 必ず完結した質問文を生成する（「？」で終わる）
+- 50-80文字程度を目安に、簡潔かつ的確にまとめる
+- すべての質問の核心的な意図を含める
 - 具体的なツール名（ChatGPT、Gemini等）や手法名は残す
-- 複数の観点を含む場合は「〜と〜の比較」「〜における〜と〜」のように統合
+- 複数の観点がある場合は最も重要な2-3点に絞って統合
 - 実践的で具体的な内容にする
-- 自然な日本語の質問形式で終わる
 - カテゴリ名にとらわれず、実際の質問内容に基づいて生成する
 
 【重要】
 - 質問の本質を捉えることを最優先にしてください
 - 地域名やカテゴリ名を無理に含める必要はありません
 - 質問者が実際に聞きたいことを正確に反映してください
+- 必ず完全な質問文を生成し、「？」で終わらせてください
 
-代表質問：`;
+代表質問（必ず完全な質問文で回答）：`;
 
     try {
       const response = UrlFetchApp.fetch(this.apiUrl + '?key=' + this.apiKey, {
@@ -62,7 +64,7 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
             temperature: 0.7,
             topK: 40,
             topP: 0.8,
-            maxOutputTokens: 200,
+            maxOutputTokens: 300,
             candidateCount: 1
           },
           safetySettings: [
@@ -100,7 +102,23 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
       
       const generatedText = result.candidates[0].content.parts[0].text.trim();
       
-      // 文字数制限を撤廃し、完全な質問を返す
+      // デバッグ情報
+      console.log('Gemini response length:', generatedText.length);
+      console.log('Gemini response:', generatedText);
+      
+      // finishReasonを確認（途中で切れたかどうか）
+      const finishReason = result.candidates[0].finishReason;
+      if (finishReason && finishReason !== 'STOP') {
+        console.warn('Gemini response was truncated. Reason:', finishReason);
+      }
+      
+      // 質問が完結しているか確認（？で終わっているか）
+      if (!generatedText.endsWith('？') && !generatedText.endsWith('?')) {
+        console.warn('Generated question seems incomplete:', generatedText);
+        // 不完全な場合は「？」を追加
+        return generatedText + '？';
+      }
+      
       return generatedText;
       
     } catch (error) {

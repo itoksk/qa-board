@@ -11,9 +11,11 @@
 - 🌏 **地域別管理**: 大阪、名古屋、福岡、広島、東京の5地域に対応
 - 📁 **カテゴリ分類**: 生成AI、教育、ICT、その他の4カテゴリ
 - 🤖 **AI要約**: TF-IDFとK-Meansクラスタリングで類似質問を自動分析し、Gemini APIで代表質問を生成
+- 🌐 **カテゴリ横断クラスタリング**: 異なるカテゴリの類似質問も統合可能
 - 👍 **いいね機能**: 参加者が共感する質問に「いいね」を付けられる（絵文字アイコン対応）
 - 🔐 **管理者機能**: パスワード保護された管理画面
 - 📊 **データ永続化**: Google Sheetsでデータを管理
+- 📤 **完全な質問表示**: 代表質問は省略されず完全に表示
 
 ## 技術スタック
 
@@ -49,6 +51,13 @@ qa-board/
 │   └── GEMINI_INTEGRATION.md # Gemini API統合ガイド
 └── README.md              # このファイル
 ```
+
+## 要件
+
+- Googleアカウント
+- Google Apps Scriptへのアクセス権
+- Google Sheetsへのアクセス権
+- Gemini APIキー（[Google AI Studio](https://makersuite.google.com/app/apikey)で取得）
 
 ## セットアップ手順
 
@@ -115,17 +124,19 @@ Google Apps Scriptエディタで以下の手順を実行：
 
 ## 使い方
 
-### 一般ユーザー向け
+詳細な使い方は[使用ガイド](docs/USAGE_GUIDE.md)を参照してください。
 
-1. デプロイされたWebアプリのURLにアクセス
-2. 地域とカテゴリを選択して質問を投稿
-3. 他の参加者の質問を閲覧し、共感する質問に「いいね」（👍→❤️）
+### クイックスタート
 
-### 管理者向け
+**一般参加者**
+1. WebアプリのURLにアクセス
+2. 質問を投稿または閲覧
+3. 共感する質問に「いいね」（👍→❤️）
 
-1. 管理者画面で設定したパスワードを入力
-2. 「代表質問を生成」ボタンで、AIによる質問分析を実行
-3. 生成された代表質問は自動的に表示される
+**管理者**
+1. 「代表質問を生成」からパスワード入力
+2. 生成オプションを選択（カテゴリ横断オプションあり）
+3. AIが自動で代表質問を生成
 
 ## アーキテクチャ
 
@@ -140,7 +151,13 @@ Google Apps Scriptエディタで以下の手順を実行：
 1. **前処理**: 日本語テキストの正規化とトークン化（bi-gram）
 2. **ベクトル化**: TF-IDFによる特徴抽出
 3. **クラスタリング**: K-means法（エルボー法で最適クラスタ数決定）
-4. **代表質問生成**: 各クラスタの重心に最も近い質問を基に、Gemini APIで要約
+4. **代表質問生成**: クラスタ内の質問を分析し、Gemini APIで自然な代表質問を生成
+
+### 最新の改善点
+
+- **カテゴリ横断クラスタリング**: 異なるカテゴリに分類された類似質問も統合
+- **完全な質問表示**: 代表質問の文字数制限を撤廃
+- **自然な質問生成**: カテゴリ名に依存せず、質問内容に基づいた生成
 
 ### データ構造
 
@@ -175,23 +192,18 @@ Google Apps Scriptエディタで以下の手順を実行：
 
 ## トラブルシューティング
 
-### エラー: SPREADSHEET_IDが設定されていません
+### よくあるエラー
 
-スクリプトプロパティに`SPREADSHEET_ID`が正しく設定されているか確認してください。
+| エラー | 解決方法 |
+|------|--------|
+| SPREADSHEET_IDが設定されていません | スクリプトプロパティに`SPREADSHEET_ID`を設定 |
+| ADMIN_PASSWORDが設定されていません | スクリプトプロパティに`ADMIN_PASSWORD`を設定 |
+| GEMINI_API_KEYが設定されていません | [Google AI Studio](https://makersuite.google.com/app/apikey)で取得して設定 |
+| models/gemini-pro is not found | `gemini-1.5-flash`モデルを使用しているか確認 |
+| いいねが動作しない | LocalStorageが有効か確認、ブラウザの再読み込み |
+| 代表質問が省略される | 最新版で修正済み、強制再生成を実行 |
 
-### エラー: GEMINI_API_KEYが設定されていません
-
-1. [Google AI Studio](https://makersuite.google.com/app/apikey)でAPIキーを取得
-2. スクリプトプロパティに`GEMINI_API_KEY`を設定
-
-### Gemini APIエラー (404: models/gemini-pro is not found)
-
-最新の`gemini-1.5-flash`モデルを使用しているか確認してください。
-
-### いいね機能が動作しない
-
-- LocalStorageが有効か確認
-- 質問IDが正しく設定されているか確認
+詳細なトラブルシューティングは[使用ガイド](docs/USAGE_GUIDE.md#よくある質問と回答)を参照してください。
 
 ## 開発者向け情報
 
@@ -211,6 +223,7 @@ qa-board/
 │   ├── styles.html        # CSS
 │   └── javascript.html    # JavaScript
 └── docs/                   # ドキュメント
+    ├── USAGE_GUIDE.md     # 使用ガイド
     ├── ML_ALGORITHM.md    # MLアルゴリズム詳細
     └── GAS_ARCHITECTURE.md # システム設計
 ```
@@ -221,8 +234,16 @@ qa-board/
 
 - `testSpreadsheetConnection()` - スプレッドシート接続テスト
 - `testVectorClustering()` - ベクトル化・クラスタリングテスト
+- `testCrossCategoryClustering()` - カテゴリ横断クラスタリングテスト
 - `analyzeQuestionData()` - 質問データ分析
 - `addSimilarTestQuestions()` - テストデータ追加
+- `checkRepresentativeQuestionLength()` - 代表質問の文字数確認
+
+## セキュリティに関する注意事項
+
+- スクリプトプロパティにはセンシティブな情報（APIキー、パスワード）が含まれます
+- これらの情報は絶対にソースコードにハードコーディングしないでください
+- スプレッドシートの共有設定に注意してください
 
 ## 貢献方法
 
@@ -241,3 +262,7 @@ qa-board/
 - Google Gemini APIチーム
 - 教育イベント参加者の皆様
 - オープンソースコミュニティ
+
+---
+
+最終更新日: 2025年1月
