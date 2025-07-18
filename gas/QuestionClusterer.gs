@@ -187,17 +187,10 @@ class QuestionClusterer {
     
     // Geminiが使えない場合のフォールバック処理
     if (!representativeQuestion) {
-      // フォールバック1: 重心最近傍法
-      // クラスタリング時に既に中心点に近い順でソートされているため、最初の質問を使用
-      if (clusterQuestions.length > 0 && clusterQuestions[0].content) {
-        representativeQuestion = clusterQuestions[0].content;
-        console.log('Using centroid method:', representativeQuestion);
-      } else {
-        // フォールバック2: 簡易的な要約生成
-        representativeQuestion = this.generateFallbackSummary(clusterQuestions, category);
-        method = 'fallback';
-        console.log('Using fallback method:', representativeQuestion);
-      }
+      // フォールバック: 簡易的な要約生成を使用
+      representativeQuestion = this.generateFallbackSummary(clusterQuestions, category);
+      method = 'fallback';
+      console.log('Using fallback method:', representativeQuestion);
     }
     
     // 重要度スコアの計算

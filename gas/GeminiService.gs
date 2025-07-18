@@ -11,7 +11,7 @@ class GeminiService {
       throw new Error('GEMINI_API_KEYが設定されていません。スクリプトのプロパティで設定してください。');
     }
     
-    this.apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    this.apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   }
   
   /**

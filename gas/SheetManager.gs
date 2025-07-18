@@ -302,24 +302,38 @@ class SheetManager {
       return [];
     }
     
-    const sheet = this.spreadsheet.getSheetByName(this.mainSheetName);
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    
-    const questions = [];
-    for (let i = 1; i < data.length; i++) {
-      const id = data[i][0];
-      if (ids.includes(id)) {
-        const question = {};
-        headers.forEach((header, index) => {
-          const key = this.toCamelCase(header);
-          question[key] = data[i][index];
-        });
-        questions.push(question);
+    try {
+      const sheet = this.spreadsheet.getSheetByName(this.mainSheetName);
+      if (!sheet) {
+        console.error('質問一覧シートが見つかりません');
+        return [];
       }
+      
+      const data = sheet.getDataRange().getValues();
+      if (data.length <= 1) {
+        return [];
+      }
+      
+      const headers = data[0];
+      const questions = [];
+      
+      for (let i = 1; i < data.length; i++) {
+        const id = data[i][0];
+        if (ids.includes(id)) {
+          const question = {};
+          headers.forEach((header, index) => {
+            const key = this.toCamelCase(header);
+            question[key] = data[i][index];
+          });
+          questions.push(question);
+        }
+      }
+      
+      return questions;
+    } catch (error) {
+      console.error('getQuestionsByIds error:', error);
+      return [];
     }
-    
-    return questions;
   }
   
   /**
