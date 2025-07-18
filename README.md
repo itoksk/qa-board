@@ -103,7 +103,11 @@ Google Apps Scriptエディタで以下の手順を実行：
    - `styles.html` - スタイルシート
    - `javascript.html` - クライアントサイドJS
 
-### 5. 初期化の実行
+### 5. GitHubリンクの設定（オプション）
+
+このステップは完了済みです。GitHubリンクは`https://github.com/itoksk/qa-board`に設定されています。
+
+### 6. 初期化の実行
 
 1. Google Apps Scriptエディタで`Initialize.gs`を開く
 2. `initializeSpreadsheet`関数を選択
@@ -111,7 +115,7 @@ Google Apps Scriptエディタで以下の手順を実行：
 4. 権限を承認
 5. テストデータを追加するか選択
 
-### 6. Webアプリとしてデプロイ
+### 7. Webアプリとしてデプロイ
 
 1. 「デプロイ」→「新しいデプロイ」をクリック
 2. 種類で「ウェブアプリ」を選択
