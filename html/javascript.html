@@ -164,6 +164,7 @@ function displayQuestions(questions) {
 
 // 質問カードのHTML生成
 function createQuestionCard(id, category, region, content, author, timestamp, likes, processed) {
+    const isLiked = localStorage.getItem(`liked_${id}`) === 'true';
     return `
         <div class="glass-effect rounded-xl p-6 hover:shadow-xl transition-shadow">
             <div class="flex justify-between items-start mb-4">
@@ -184,12 +185,12 @@ function createQuestionCard(id, category, region, content, author, timestamp, li
                 <button 
                     onclick="handleLike('${id}')" 
                     id="like-btn-${id}"
-                    class="like-button"
+                    class="like-button ${isLiked ? 'liked' : ''}"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="heart-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="heart-icon" fill="${isLiked ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
-                    <span id="like-count-${id}" class="font-medium">${likes}</span>
+                    <span id="like-count-${id}" class="font-medium">${likes || 0}</span>
                 </button>
             </div>
         </div>
@@ -328,15 +329,24 @@ async function handleLike(questionId) {
     
     const button = document.getElementById(`like-btn-${questionId}`);
     const countSpan = document.getElementById(`like-count-${questionId}`);
+    const isLiked = localStorage.getItem(`liked_${questionId}`) === 'true';
     
     if (!button || !countSpan) {
         console.error('要素が見つかりません');
         return;
     }
     
+    // 既にいいね済みの場合
+    if (isLiked) {
+        showNotification('既にいいねしています ❤️', 'info');
+        button.classList.add('shake-animation');
+        setTimeout(() => button.classList.remove('shake-animation'), 600);
+        return;
+    }
+    
     // ボタンを一時的に無効化
     button.disabled = true;
-    button.classList.add('opacity-50', 'cursor-not-allowed');
+    button.classList.add('opacity-50', 'cursor-not-allowed', 'liking');
     
     try {
         const result = await GAS.addLike(questionId);
@@ -345,28 +355,32 @@ async function handleLike(questionId) {
             // いいね数を更新
             countSpan.textContent = result.newLikeCount;
             
+            // ローカルストレージに保存
+            localStorage.setItem(`liked_${questionId}`, 'true');
+            button.classList.add('liked');
+            
             // アニメーション効果
-            button.classList.add('scale-110');
+            button.classList.add('like-animation');
             setTimeout(() => {
-                button.classList.remove('scale-110');
-            }, 300);
+                button.classList.remove('like-animation');
+            }, 600);
             
             // ハートを塗りつぶし
             const svg = button.querySelector('svg');
             svg.setAttribute('fill', 'currentColor');
             
-            showNotification('いいねしました！');
+            showNotification('いいねしました！❤️', 'success');
         } else {
-            alert('エラー: ' + result.error);
+            showNotification('エラー: ' + result.error, 'error');
         }
     } catch (error) {
         console.error('いいねエラー:', error);
-        alert('通信エラー: ' + error);
+        showNotification('通信エラーが発生しました', 'error');
     } finally {
         // ボタンを再度有効化
         setTimeout(() => {
             button.disabled = false;
-            button.classList.remove('opacity-50', 'cursor-not-allowed');
+            button.classList.remove('opacity-50', 'cursor-not-allowed', 'liking');
         }, 1000);
     }
 }
