@@ -1,8 +1,8 @@
 /**
- * 質問データの分析
+ * 意見データの分析
  */
 function analyzeQuestionData() {
-  console.log('=== 質問データ分析 ===');
+  console.log('=== 意見データ分析 ===');
   
   try {
     const sheetManager = new SheetManager();
@@ -13,7 +13,7 @@ function analyzeQuestionData() {
     regions.forEach(region => {
       console.log(`\n【${region}地域】`);
       const questions = sheetManager.getQuestions(region);
-      console.log(`質問数: ${questions.length}`);
+      console.log(`意見数: ${questions.length}`);
       
       if (questions.length > 0) {
         // カテゴリ別に集計
@@ -43,9 +43,9 @@ function analyzeQuestionData() {
     Object.entries(globalCategoryCount).forEach(([cat, count]) => {
       console.log(`${cat}: ${count}件`);
       
-      // カテゴリ内の質問を表示
+      // カテゴリ内の意見を表示
       if (count > 1) {
-        console.log('  質問内容:');
+        console.log('  意見内容:');
         allQuestions
           .filter(q => q.category === cat)
           .forEach((q, i) => {
@@ -62,15 +62,15 @@ function analyzeQuestionData() {
 }
 
 /**
- * 類似質問のテストデータを追加
+ * 類似意見のテストデータを追加
  */
 function addSimilarTestQuestions() {
-  console.log('=== 類似質問のテストデータ追加 ===');
+  console.log('=== 類似意見のテストデータ追加 ===');
   
   try {
     const sheetManager = new SheetManager();
     
-    // AI関連の類似質問
+    // AI関連の類似意見
     const aiQuestions = [
       {
         region: 'osaka',
@@ -98,7 +98,7 @@ function addSimilarTestQuestions() {
       }
     ];
     
-    // 教育関連の類似質問
+    // 教育関連の類似意見
     const educationQuestions = [
       {
         region: 'osaka',
@@ -120,7 +120,7 @@ function addSimilarTestQuestions() {
       }
     ];
     
-    // ICT関連の類似質問
+    // ICT関連の類似意見
     const ictQuestions = [
       {
         region: 'osaka',
@@ -142,10 +142,10 @@ function addSimilarTestQuestions() {
       }
     ];
     
-    // すべての質問を追加
+    // すべての意見を追加
     const allTestQuestions = [...aiQuestions, ...educationQuestions, ...ictQuestions];
     
-    console.log(`${allTestQuestions.length}件のテスト質問を追加中...`);
+    console.log(`${allTestQuestions.length}件のテスト意見を追加中...`);
     
     allTestQuestions.forEach(q => {
       const question = {

@@ -1,4 +1,4 @@
-// QA Board - メインコード
+// Opinion Board - メインコード
 
 /**
  * スプレッドシートIDを取得
@@ -35,11 +35,11 @@ function doGet(e) {
   const template = HtmlService.createTemplateFromFile('index_gas');
   template.data = {
     regions: ['osaka', 'nagoya', 'fukuoka', 'hiroshima', 'tokyo'],
-    categories: ['ai', 'education', 'ict', 'other']
+    categories: ['notebooklm', 'gem', 'future']
   };
   
   return template.evaluate()
-    .setTitle('QA Board - 教育イベント質問集約システム')
+    .setTitle('Opinion Board - 教育イベント意見集約システム')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -109,7 +109,7 @@ function addLike(questionId) {
     } else {
       return {
         success: false,
-        error: '質問が見つかりません'
+        error: '意見が見つかりません'
       };
     }
   } catch (error) {
@@ -122,11 +122,12 @@ function addLike(questionId) {
 }
 
 /**
- * 質問を投稿
+ * 意見を投稿（キューイング対応版）
  */
 function submitQuestion(data) {
   try {
-    const sheetManager = new SheetManager();
+    // 高負荷時はキューに追加して即座にレスポンスを返す
+    const queueManager = new QueueManager();
     
     const question = {
       id: Utilities.getUuid(),
@@ -140,11 +141,17 @@ function submitQuestion(data) {
       likes: 0
     };
     
-    sheetManager.addQuestion(question);
+    // キューに追加
+    const queueId = queueManager.addToQueue(question);
+    
+    // トリガーが設定されていない場合は設定
+    ensureQueueTrigger();
     
     return {
       success: true,
-      questionId: question.id
+      questionId: question.id,
+      queued: true,
+      message: '意見を受け付けました。まもなく反映されます。'
     };
   } catch (error) {
     console.error('submitQuestion error:', error);
@@ -156,7 +163,38 @@ function submitQuestion(data) {
 }
 
 /**
- * 質問一覧を取得
+ * 直接意見を投稿（キューを使わない）
+ */
+function submitQuestionDirect(data) {
+  try {
+    const sheetManager = new SheetManager();
+    
+    const question = {
+      id: data.id || Utilities.getUuid(),
+      region: data.region,
+      category: data.category,
+      content: data.content,
+      author: data.author || '匿名',
+      timestamp: data.timestamp || new Date().toISOString(),
+      status: data.status || 'new',
+      processed: data.processed || false,
+      likes: data.likes || 0
+    };
+    
+    sheetManager.addQuestion(question);
+    
+    return {
+      success: true,
+      questionId: question.id
+    };
+  } catch (error) {
+    console.error('submitQuestionDirect error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 意見一覧を取得
  */
 function getQuestions(region = 'all') {
   try {
@@ -180,14 +218,14 @@ function getQuestions(region = 'all') {
 }
 
 /**
- * 生成された代表質問を取得
+ * 生成された代表意見を取得
  */
 function getGeneratedQuestions(region = 'all') {
   try {
     const sheetManager = new SheetManager();
     const representatives = sheetManager.getRepresentativeQuestions(region);
     
-    // 各代表質問にソース質問の内容を追加
+    // 各代表意見にソース意見の内容を追加
     representatives.forEach(rep => {
       if (rep.sourceIds && rep.sourceIds.length > 0) {
         const sourceQuestions = sheetManager.getQuestionsByIds(rep.sourceIds);
@@ -214,7 +252,7 @@ function getGeneratedQuestions(region = 'all') {
 }
 
 /**
- * 代表質問を生成（管理者のみ）
+ * 代表意見を生成（管理者のみ）
  */
 function generateRepresentative(region, password, forceRegenerate = false) {
   try {
@@ -273,10 +311,9 @@ function getRegionDisplayName(region) {
  */
 function getCategoryDisplayName(category) {
   const categoryMap = {
-    'ai': '生成AI',
-    'education': '教育',
-    'ict': 'ICT',
-    'other': 'その他'
+    'notebooklm': 'NotebookLMが活躍しような場面',
+    'gem': 'Gemを使ってみた感想や期待感',
+    'future': '生成AIを手にした私たちは、子どもたちのためにどんな新しい教育をデザインできるでしょうか？'
   };
   return categoryMap[category] || category;
 }

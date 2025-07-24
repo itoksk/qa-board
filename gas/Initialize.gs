@@ -13,8 +13,8 @@ function initializeSpreadsheet() {
     // SheetManagerのインスタンスを作成（これが自動的にシートを初期化）
     const sheetManager = new SheetManager();
     
-    console.log('✅ 質問一覧シートを作成/確認しました');
-    console.log('✅ 代表質問シートを作成/確認しました');
+    console.log('✅ 意見一覧シートを作成/確認しました');
+    console.log('✅ 代表意見シートを作成/確認しました');
     console.log('✅ 地域別シートを作成/確認しました');
     
     // テストデータを追加（オプション）
@@ -38,7 +38,7 @@ function initializeSpreadsheet() {
 }
 
 /**
- * サンプル質問データを追加
+ * サンプル意見データを追加
  */
 function addSampleQuestions() {
   const sheetManager = new SheetManager();

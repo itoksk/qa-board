@@ -1,5 +1,5 @@
 /**
- * 質問クラスタリングクラス
+ * 意見クラスタリングクラス
  */
 class QuestionClusterer {
   constructor() {
@@ -18,12 +18,12 @@ class QuestionClusterer {
   }
   
   /**
-   * 質問処理メイン
+   * 意見処理メイン
    */
   processQuestions(region, forceRegenerate, crossCategory = true) {
     console.log(`Processing questions for region: ${region}, force: ${forceRegenerate}, crossCategory: ${crossCategory}`);
     
-    // 質問取得
+    // 意見取得
     let questions = this.sheetManager.getQuestions(region);
     
     // 未処理のみフィルタ（強制再生成でない場合）
@@ -33,7 +33,7 @@ class QuestionClusterer {
     
     if (questions.length === 0) {
       return { 
-        message: '処理対象の質問がありません',
+        message: '処理対象の意見がありません',
         processedCount: 0,
         representativeCount: 0
       };
@@ -100,7 +100,7 @@ class QuestionClusterer {
     }
     
     return {
-      message: '代表質問の生成が完了しました',
+      message: '代表意見の生成が完了しました',
       processedCount: questions.length,
       representativeCount: allRepresentatives.length,
       representatives: allRepresentatives
@@ -124,11 +124,11 @@ class QuestionClusterer {
   }
   
   /**
-   * 質問のクラスタリング（ML_ALGORITHM.mdに基づく実装）
+   * 意見のクラスタリング（ML_ALGORITHM.mdに基づく実装）
    */
   clusterQuestions(questions) {
     if (questions.length <= 3) {
-      // 質問が少ない場合は1つのクラスタに
+      // 意見が少ない場合は1つのクラスタに
       return [questions];
     }
     
@@ -145,7 +145,7 @@ class QuestionClusterer {
       // 3. K-Meansクラスタリング実行
       const { labels, centers } = this.kmeans.cluster(vectors, optimalK);
       
-      // 4. クラスタごとに質問をグループ化
+      // 4. クラスタごとに意見をグループ化
       const clusters = [];
       for (let i = 0; i < optimalK; i++) {
         const clusterQuestions = [];
@@ -184,12 +184,12 @@ class QuestionClusterer {
   }
   
   /**
-   * 代表質問生成（ML_ALGORITHM.mdに基づく実装）
+   * 代表意見生成（ML_ALGORITHM.mdに基づく実装）
    */
   generateRepresentative(clusterQuestions, category, region) {
     const questionTexts = clusterQuestions.map(q => q.content);
     
-    // 代表質問の選定方法
+    // 代表意見の選定方法
     let representativeQuestion;
     let method = 'centroid'; // デフォルトは重心最近傍法
     
@@ -304,8 +304,8 @@ class QuestionClusterer {
       summary = defaultQuestions[category] || this.createDefaultSummary(questions, category);
     }
     
-    // 文字数制限を撤廃し、完全な質問を保持
-    // 質問が「？」で終わっていない場合は追加
+    // 文字数制限を撤廃し、完全な意見を保持
+    // 意見が「？」で終わっていない場合は追加
     if (!summary.endsWith('？') && !summary.endsWith('?')) {
       summary += '？';
     }
@@ -321,7 +321,7 @@ class QuestionClusterer {
     const wordCounts = {};
     const stopWords = ['です', 'ます', 'する', 'なる', 'ある', 'いる', 'れる', 'られる', 'こと', 'もの', 'ため'];
     
-    // 全質問からキーワードをカウント
+    // 全意見からキーワードをカウント
     questions.forEach(q => {
       const words = this.tokenize(q.content);
       words.forEach(word => {
@@ -340,7 +340,7 @@ class QuestionClusterer {
   }
   
   /**
-   * 質問パターンの分析
+   * 意見パターンの分析
    */
   analyzeQuestionPatterns(questions) {
     const patterns = {
@@ -577,11 +577,11 @@ class QuestionClusterer {
       return `${this.getCategoryName(category)}について教えてください`;
     }
     
-    // 最初と最後の質問から要素を抽出してミックス
+    // 最初と最後の意見から要素を抽出してミックス
     const firstQ = questions[0].content;
     const lastQ = questions[questions.length - 1].content;
     
-    // 最初の質問から主要な名詞を、最後の質問から動詞を抽出する簡易的な方法
+    // 最初の意見から主要な名詞を、最後の意見から動詞を抽出する簡易的な方法
     const keywords = this.extractKeywords(questions);
     if (keywords.length >= 2) {
       return `${keywords[0]}と${keywords[1]}の効果的な活用方法を教えてください`;

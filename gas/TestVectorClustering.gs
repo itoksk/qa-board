@@ -7,7 +7,7 @@ function testVectorClusteringDetailed() {
   try {
     const clusterer = new QuestionClusterer();
     
-    // テスト用の類似質問群
+    // テスト用の類似意見群
     const testQuestions = [
       {
         id: 'test1',
@@ -51,7 +51,7 @@ function testVectorClusteringDetailed() {
       }
     ];
     
-    console.log('テスト質問数:', testQuestions.length);
+    console.log('テスト意見数:', testQuestions.length);
     testQuestions.forEach((q, i) => {
       console.log(`${i + 1}. ${q.content}`);
     });
@@ -104,8 +104,8 @@ function testVectorClusteringDetailed() {
     console.log('ラベル:', labels);
     console.log('慣性:', inertia.toFixed(3));
     
-    // クラスタごとに質問を表示
-    console.log('\nクラスタ別の質問:');
+    // クラスタごとに意見を表示
+    console.log('\nクラスタ別の意見:');
     for (let k = 0; k < optimalK; k++) {
       console.log(`\nクラスタ ${k}:`);
       labels.forEach((label, i) => {
@@ -150,14 +150,14 @@ function testVectorAnalysisWithRealData() {
     const sheetManager = new SheetManager();
     const clusterer = new QuestionClusterer();
     
-    // 大阪のAIカテゴリの質問を取得
+    // 大阪のAIカテゴリの意見を取得
     const allQuestions = sheetManager.getQuestions('osaka');
     const aiQuestions = allQuestions.filter(q => q.category === 'ai');
     
-    console.log(`大阪のAI質問数: ${aiQuestions.length}`);
+    console.log(`大阪のAI意見数: ${aiQuestions.length}`);
     
     if (aiQuestions.length >= 2) {
-      console.log('\n質問内容:');
+      console.log('\n意見内容:');
       aiQuestions.forEach((q, i) => {
         console.log(`${i + 1}. ${q.content}`);
       });
@@ -168,16 +168,16 @@ function testVectorAnalysisWithRealData() {
       
       console.log(`生成されたクラスタ数: ${clusters.length}`);
       
-      // 代表質問生成テスト
+      // 代表意見生成テスト
       if (clusters.length > 0 && clusters[0].length > 1) {
-        console.log('\n最初のクラスタで代表質問生成:');
+        console.log('\n最初のクラスタで代表意見生成:');
         const rep = clusterer.generateRepresentative(clusters[0], 'ai', 'osaka');
-        console.log('代表質問:', rep.question);
+        console.log('代表意見:', rep.question);
         console.log('生成方法:', rep.method);
-        console.log('元の質問数:', rep.clusterSize);
+        console.log('元の意見数:', rep.clusterSize);
       }
     } else {
-      console.log('AI質問が2件未満のため、クラスタリングできません');
+      console.log('AI意見が2件未満のため、クラスタリングできません');
       console.log('addSimilarTestQuestions()を実行してテストデータを追加してください');
     }
     

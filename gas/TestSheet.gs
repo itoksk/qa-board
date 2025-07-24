@@ -42,10 +42,10 @@ function inspectSheetData() {
     // getQuestions()の結果も確認
     console.log('\n=== getQuestions()の結果 ===');
     const questions = sheetManager.getQuestions('all');
-    console.log('取得した質問数:', questions.length);
+    console.log('取得した意見数:', questions.length);
     
     if (questions.length > 0) {
-      console.log('\n最初の質問:');
+      console.log('\n最初の意見:');
       console.log(JSON.stringify(questions[0], null, 2));
     }
     
@@ -65,7 +65,7 @@ function testDataConversion() {
   console.log('=== ヘッダー名変換テスト ===');
   
   const testHeaders = [
-    'ID', '地域', 'カテゴリ', '質問内容', '投稿者',
+    'ID', '地域', 'カテゴリ', '意見内容', '投稿者',
     'タイムスタンプ', 'ステータス', '処理済み', 'いいね数'
   ];
   
@@ -80,7 +80,7 @@ function testDataConversion() {
  */
 function rebuildQuestionData() {
   try {
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('質問一覧');
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('意見一覧');
     const data = sheet.getDataRange().getValues();
     
     if (data.length <= 1) {
@@ -104,7 +104,7 @@ function rebuildQuestionData() {
       questions.push(question);
     }
     
-    console.log('再構築した質問データ:');
+    console.log('再構築した意見データ:');
     console.log(JSON.stringify(questions, null, 2));
     
     return questions;

@@ -76,7 +76,7 @@ function hideAllSections() {
     document.getElementById('adminSection').classList.add('hidden');
 }
 
-// 質問投稿
+// 意見投稿
 async function submitQuestionForm(event) {
     event.preventDefault();
     
@@ -95,12 +95,16 @@ async function submitQuestionForm(event) {
     try {
         const result = await GAS.submitQuestion(formData);
         if (result.success) {
-            showNotification('質問を投稿しました');
+            if (result.queued) {
+                showNotification('意見を受け付けました。まもなく反映されます。');
+            } else {
+                showNotification('意見を投稿しました');
+            }
             event.target.reset();
-            // 質問一覧画面に遷移
+            // 意見一覧画面に遷移
             setTimeout(() => {
                 showQuestions();
-            }, 1000);
+            }, 1500);
         } else {
             alert('エラー: ' + result.error);
         }
@@ -113,16 +117,16 @@ async function submitQuestionForm(event) {
     }
 }
 
-// 質問一覧読み込み
+// 意見一覧読み込み
 async function loadQuestions() {
     const container = document.getElementById('questionsContainer');
     const region = document.getElementById('regionFilter').value;
     
-    container.innerHTML = '<div class="text-center py-8"><div class="loader"></div><p class="mt-4 text-gray-400">質問を読み込み中...</p></div>';
+    container.innerHTML = '<div class="text-center py-8"><div class="loader"></div><p class="mt-4 text-gray-400">意見を読み込み中...</p></div>';
     
     try {
         const result = await GAS.getQuestions(region);
-        console.log('質問取得結果:', result);
+        console.log('意見取得結果:', result);
         
         if (result.success) {
             currentQuestions = result.questions;
@@ -136,12 +140,12 @@ async function loadQuestions() {
     }
 }
 
-// 質問表示
+// 意見表示
 function displayQuestions(questions) {
     const container = document.getElementById('questionsContainer');
     
     if (!questions || questions.length === 0) {
-        container.innerHTML = '<p class="text-center text-gray-400 py-8">まだ質問がありません</p>';
+        container.innerHTML = '<p class="text-center text-gray-400 py-8">まだ意見がありません</p>';
         return;
     }
     
@@ -162,7 +166,7 @@ function displayQuestions(questions) {
     container.innerHTML = html;
 }
 
-// 質問カードのHTML生成
+// 意見カードのHTML生成
 function createQuestionCard(id, category, region, content, author, timestamp, likes, processed) {
     const isLiked = localStorage.getItem(`liked_${id}`) === 'true';
     return `
@@ -195,12 +199,12 @@ function createQuestionCard(id, category, region, content, author, timestamp, li
     `;
 }
 
-// 代表質問読み込み
+// 代表意見読み込み
 async function loadGeneratedQuestions() {
     const container = document.getElementById('generatedQuestionsContainer');
     const region = document.getElementById('generatedRegionFilter').value;
     
-    container.innerHTML = '<div class="text-center py-8"><div class="loader"></div><p class="mt-4 text-gray-400">代表質問を読み込み中...</p></div>';
+    container.innerHTML = '<div class="text-center py-8"><div class="loader"></div><p class="mt-4 text-gray-400">代表意見を読み込み中...</p></div>';
     
     try {
         const result = await GAS.getGeneratedQuestions(region);
@@ -214,12 +218,12 @@ async function loadGeneratedQuestions() {
     }
 }
 
-// 代表質問表示
+// 代表意見表示
 function displayGeneratedQuestions(representatives) {
     const container = document.getElementById('generatedQuestionsContainer');
     
     if (!representatives || representatives.length === 0) {
-        container.innerHTML = '<p class="text-center text-gray-400 py-8">まだ代表質問が生成されていません</p>';
+        container.innerHTML = '<p class="text-center text-gray-400 py-8">まだ代表意見が生成されていません</p>';
         return;
     }
     
@@ -233,7 +237,7 @@ function displayGeneratedQuestions(representatives) {
     container.innerHTML = html;
 }
 
-// 代表質問カードのHTML生成
+// 代表意見カードのHTML生成
 function createRepresentativeCard(rep) {
     const sourceQuestions = rep.sourceQuestions || [];
     
@@ -251,10 +255,10 @@ function createRepresentativeCard(rep) {
                 <span class="text-gray-400 text-sm">${formatDate(rep.generatedAt)} 生成</span>
             </div>
             <h4 class="text-xl font-semibold mb-3">${escapeHtml(rep.question)}</h4>
-            <p class="text-gray-300 mb-4">この代表質問は、${rep.clusterSize}件の類似質問から生成されました。</p>
+            <p class="text-gray-300 mb-4">この代表意見は、${rep.clusterSize}件の類似意見から生成されました。</p>
             ${sourceQuestions.length > 0 ? `
             <details class="text-sm">
-                <summary class="cursor-pointer text-purple-400 hover:text-purple-300">元の質問を表示</summary>
+                <summary class="cursor-pointer text-purple-400 hover:text-purple-300">元の意見を表示</summary>
                 <ul class="mt-2 space-y-2 text-gray-400">
                     ${sourceQuestions.map(q => `<li>• ${escapeHtml(q)}</li>`).join('')}
                 </ul>
@@ -286,7 +290,7 @@ async function checkPassword() {
     }
 }
 
-// 代表質問生成
+// 代表意見生成
 async function generateRepresentativeQuestions() {
     const button = document.getElementById('generateButton');
     const originalText = button.textContent;
@@ -304,11 +308,11 @@ async function generateRepresentativeQuestions() {
             resultsDiv.innerHTML = `
                 <p class="text-green-400 mb-2">生成完了しました</p>
                 <p class="text-gray-300">対象地域: ${getRegionLabel(region)}</p>
-                <p class="text-gray-300">処理した質問数: ${result.results.processedCount}</p>
-                <p class="text-gray-300">生成した代表質問数: ${result.results.representativeCount}</p>
+                <p class="text-gray-300">処理した意見数: ${result.results.processedCount}</p>
+                <p class="text-gray-300">生成した代表意見数: ${result.results.representativeCount}</p>
                 ${result.results.message ? `<p class="text-gray-300 mt-2">${result.results.message}</p>` : ''}
             `;
-            showNotification('代表質問の生成が完了しました');
+            showNotification('代表意見の生成が完了しました');
         } else {
             resultsDiv.innerHTML = `<p class="text-red-400">エラー: ${result.error}</p>`;
         }
@@ -386,10 +390,9 @@ async function handleLike(questionId) {
 // ユーティリティ関数
 function getCategoryLabel(category) {
     const labels = {
-        'ai': '生成AI',
-        'education': '教育',
-        'ict': 'ICT',
-        'other': 'その他'
+        'notebooklm': 'NotebookLM',
+        'gem': 'Gem',
+        'future': '未来の教育'
     };
     return labels[category] || category;
 }

@@ -15,39 +15,39 @@ class GeminiService {
   }
   
   /**
-   * 質問要約生成
+   * 意見要約生成
    */
   generateSummary(questions, category, region) {
     const regionName = this.getRegionDisplayName(region);
     const categoryName = this.getCategoryDisplayName(category);
     
-    const prompt = `あなたは教育現場の質問を分析し、統合する専門家です。
-以下は${questions.length}件の質問です。これらの質問の内容をよく分析し、質問者が本当に知りたがっていることを理解してください。
+    const prompt = `あなたは教育現場での意見を分析し、統合する専門家です。
+以下は${questions.length}件の意見です。これらの意見の内容をよく分析し、参加者が共有したい経験や考えの本質を理解してください。
 
-【質問群】
+【意見群】
 ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
 【分析タスク】
-1. 各質問の核心となる意図を抽出してください
+1. 各意見の核心となる経験や考えを抽出してください
 2. 共通するキーワードやテーマを特定してください
-3. すべての意図を網羅した、簡潔で的確な代表質問を作成してください
+3. すべての意見の本質を網羅した、簡潔で的確な代表意見を作成してください
 
-【代表質問の要件】
-- 必ず完結した質問文を生成する（「？」で終わる）
+【代表意見の要件】
+- 参加者の経験や考えを統合した文章にする
 - 50-80文字程度を目安に、簡潔かつ的確にまとめる
-- すべての質問の核心的な意図を含める
-- 具体的なツール名（ChatGPT、Gemini等）や手法名は残す
+- すべての意見の核心的な内容を含める
+- 具体的なツール名（NotebookLM、Gem等）や手法名は残す
 - 複数の観点がある場合は最も重要な2-3点に絞って統合
 - 実践的で具体的な内容にする
-- カテゴリ名にとらわれず、実際の質問内容に基づいて生成する
+- カテゴリの趣旨に沿った内容にする
 
 【重要】
-- 質問の本質を捉えることを最優先にしてください
-- 地域名やカテゴリ名を無理に含める必要はありません
-- 質問者が実際に聞きたいことを正確に反映してください
-- 必ず完全な質問文を生成し、「？」で終わらせてください
+- 意見の本質を捉えることを最優先にしてください
+- 地域名は含めなくて構いません
+- 参加者が実際に共有したい経験や考えを正確に反映してください
+- 完全な文章として成立させてください
 
-代表質問（必ず完全な質問文で回答）：`;
+代表意見（完全な文章で回答）：`;
 
     try {
       const response = UrlFetchApp.fetch(this.apiUrl + '?key=' + this.apiKey, {
@@ -112,7 +112,7 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
         console.warn('Gemini response was truncated. Reason:', finishReason);
       }
       
-      // 質問が完結しているか確認（？で終わっているか）
+      // 意見が完結しているか確認（？で終わっているか）
       if (!generatedText.endsWith('？') && !generatedText.endsWith('?')) {
         console.warn('Generated question seems incomplete:', generatedText);
         // 不完全な場合は「？」を追加
@@ -131,15 +131,15 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
   }
   
   /**
-   * 複数の質問から詳細な分析を生成
+   * 複数の意見から詳細な分析を生成
    */
   generateDetailedAnalysis(questions, category, region) {
-    const prompt = `以下の質問群を分析し、教育現場での関心事を抽出してください。
+    const prompt = `以下の意見群を分析し、教育現場での関心事を抽出してください。
 
 地域：${this.getRegionDisplayName(region)}
 カテゴリ：${this.getCategoryDisplayName(category)}
 
-質問群：
+意見群：
 ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
 以下の形式で分析してください：
@@ -199,10 +199,9 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
    */
   getCategoryDisplayName(category) {
     const categoryMap = {
-      'ai': '生成AI',
-      'education': '教育',
-      'ict': 'ICT',
-      'other': 'その他'
+      'notebooklm': 'NotebookLMが活躍しような場面',
+      'gem': 'Gemを使ってみた感想や期待感',
+      'future': '生成AIを手にした私たちは、子どもたちのためにどんな新しい教育をデザインできるでしょうか？'
     };
     return categoryMap[category] || category;
   }

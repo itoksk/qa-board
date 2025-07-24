@@ -12,7 +12,7 @@ function testClustering() {
     const clusterer = new QuestionClusterer();
     const sheetManager = new SheetManager();
     
-    // テスト用の質問を用意
+    // テスト用の意見を用意
     const testQuestions = [
       {
         id: 'test1',
@@ -56,7 +56,7 @@ function testClustering() {
       }
     ];
     
-    console.log('\nテスト質問数:', testQuestions.length);
+    console.log('\nテスト意見数:', testQuestions.length);
     
     // カテゴリ別にグループ化
     const categoryGroups = clusterer.groupByCategory(testQuestions);
@@ -69,7 +69,7 @@ function testClustering() {
     const aiQuestions = categoryGroups['ai'] || [];
     if (aiQuestions.length > 0) {
       console.log('\n=== AIカテゴリのクラスタリング ===');
-      console.log('質問数:', aiQuestions.length);
+      console.log('意見数:', aiQuestions.length);
       
       const clusters = clusterer.clusterQuestions(aiQuestions);
       console.log('生成されたクラスタ数:', clusters.length);
@@ -84,21 +84,21 @@ function testClustering() {
         });
       });
       
-      // 代表質問の生成テスト
+      // 代表意見の生成テスト
       if (clusters.length > 0 && clusters[0].length > 0) {
-        console.log('\n=== 代表質問生成テスト ===');
+        console.log('\n=== 代表意見生成テスト ===');
         const rep = clusterer.generateRepresentative(clusters[0], 'ai', 'osaka');
-        console.log('生成された代表質問:', rep.question);
+        console.log('生成された代表意見:', rep.question);
         console.log('生成方法:', rep.method);
         console.log('クラスタサイズ:', rep.clusterSize);
-        console.log('元質問ID:', rep.sourceIds);
+        console.log('元意見ID:', rep.sourceIds);
       }
     }
     
     // 実際のデータでテスト
     console.log('\n\n=== 実データでのテスト ===');
     const realQuestions = sheetManager.getQuestions('osaka');
-    console.log('大阪の質問数:', realQuestions.length);
+    console.log('大阪の意見数:', realQuestions.length);
     
     if (realQuestions.length > 0) {
       const realCategoryGroups = clusterer.groupByCategory(realQuestions);
@@ -184,10 +184,10 @@ function testVectorization() {
 }
 
 /**
- * 代表質問生成の詳細テスト
+ * 代表意見生成の詳細テスト
  */
 function testRepresentativeGeneration() {
-  console.log('=== 代表質問生成詳細テスト ===');
+  console.log('=== 代表意見生成詳細テスト ===');
   
   try {
     const clusterer = new QuestionClusterer();
@@ -198,18 +198,18 @@ function testRepresentativeGeneration() {
     console.log('\n処理結果:', result);
     
     if (result.success && result.results) {
-      console.log('\n処理された質問数:', result.results.processedCount);
-      console.log('生成された代表質問数:', result.results.representativeCount);
+      console.log('\n処理された意見数:', result.results.processedCount);
+      console.log('生成された代表意見数:', result.results.representativeCount);
       
       if (result.results.representatives && result.results.representatives.length > 0) {
-        console.log('\n生成された代表質問:');
+        console.log('\n生成された代表意見:');
         result.results.representatives.forEach((rep, i) => {
           console.log(`\n${i + 1}. ${rep.question}`);
           console.log(`   カテゴリ: ${rep.category}`);
           console.log(`   地域: ${rep.region}`);
           console.log(`   クラスタサイズ: ${rep.clusterSize}`);
           console.log(`   生成方法: ${rep.method}`);
-          console.log(`   元質問ID: ${rep.sourceIds ? rep.sourceIds.join(', ') : 'なし'}`);
+          console.log(`   元意見ID: ${rep.sourceIds ? rep.sourceIds.join(', ') : 'なし'}`);
         });
       }
     }

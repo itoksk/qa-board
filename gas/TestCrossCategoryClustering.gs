@@ -7,7 +7,7 @@ function testCrossCategoryClustering() {
   try {
     const clusterer = new QuestionClusterer();
     
-    // テスト用の質問データ（異なるカテゴリだが関連性がある）
+    // テスト用の意見データ（異なるカテゴリだが関連性がある）
     const testQuestions = [
       {
         id: 'test1',
@@ -51,7 +51,7 @@ function testCrossCategoryClustering() {
       }
     ];
     
-    console.log('テスト質問:');
+    console.log('テスト意見:');
     testQuestions.forEach((q, i) => {
       console.log(`${i + 1}. [${q.category}] ${q.content}`);
     });
@@ -101,16 +101,16 @@ function testCrossCategoryClustering() {
 }
 
 /**
- * 代表質問の文字数制限を確認
+ * 代表意見の文字数制限を確認
  */
 function checkRepresentativeQuestionLength() {
-  console.log('=== 代表質問の文字数確認 ===');
+  console.log('=== 代表意見の文字数確認 ===');
   
   try {
     const sheetManager = new SheetManager();
     const representatives = sheetManager.getRepresentativeQuestions('all');
     
-    console.log(`代表質問数: ${representatives.length}`);
+    console.log(`代表意見数: ${representatives.length}`);
     
     representatives.forEach((rep, i) => {
       const length = rep.question.length;
@@ -130,7 +130,7 @@ function checkRepresentativeQuestionLength() {
       console.log(`平均文字数: ${avg.toFixed(1)}`);
       console.log(`最大文字数: ${max}`);
       console.log(`最小文字数: ${min}`);
-      console.log(`省略された質問数: ${truncatedCount} / ${representatives.length}`);
+      console.log(`省略された意見数: ${truncatedCount} / ${representatives.length}`);
     }
     
   } catch (error) {

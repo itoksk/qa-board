@@ -29,14 +29,14 @@ function testSpreadsheetConnection() {
 }
 
 /**
- * 質問一覧シートの内容を確認
+ * 意見一覧シートの内容を確認
  */
 function checkQuestionSheet() {
   try {
     const sheetManager = new SheetManager();
     const sheet = sheetManager.questionSheet;
     
-    console.log('\n📊 質問一覧シートの情報:');
+    console.log('\n📊 意見一覧シートの情報:');
     console.log('シート名:', sheet.getName());
     console.log('行数:', sheet.getLastRow());
     console.log('列数:', sheet.getLastColumn());
@@ -67,7 +67,7 @@ function checkQuestionSheet() {
 }
 
 /**
- * テスト質問を直接追加
+ * テスト意見を直接追加
  */
 function addTestQuestionDirect() {
   try {
@@ -77,7 +77,7 @@ function addTestQuestionDirect() {
       id: Utilities.getUuid(),
       region: 'tokyo',
       category: 'ai',
-      content: 'テスト質問: ' + new Date().toLocaleString('ja-JP'),
+      content: 'テスト意見: ' + new Date().toLocaleString('ja-JP'),
       author: 'デバッグユーザー',
       timestamp: new Date().toISOString(),
       status: 'new',
@@ -85,11 +85,11 @@ function addTestQuestionDirect() {
       likes: 0
     };
     
-    console.log('追加する質問:', testQuestion);
+    console.log('追加する意見:', testQuestion);
     
     sheetManager.addQuestion(testQuestion);
     
-    console.log('✅ テスト質問を追加しました');
+    console.log('✅ テスト意見を追加しました');
     console.log('ID:', testQuestion.id);
     
     // 追加後の確認
@@ -99,12 +99,12 @@ function addTestQuestionDirect() {
     if (added) {
       console.log('✅ 追加を確認しました:', added);
     } else {
-      console.log('❌ 追加した質問が見つかりません');
+      console.log('❌ 追加した意見が見つかりません');
     }
     
     return testQuestion;
   } catch (error) {
-    console.error('❌ 質問追加エラー:', error);
+    console.error('❌ 意見追加エラー:', error);
     return 'エラー: ' + error.toString();
   }
 }
@@ -128,14 +128,14 @@ function testSubmitQuestion() {
     console.log('実行結果:', result);
     
     if (result.success) {
-      console.log('✅ 質問投稿成功');
-      console.log('質問ID:', result.questionId);
+      console.log('✅ 意見投稿成功');
+      console.log('意見ID:', result.questionId);
       
       // 投稿後の確認
       const questions = getQuestions('osaka');
-      console.log('大阪の質問数:', questions.questions ? questions.questions.length : 0);
+      console.log('大阪の意見数:', questions.questions ? questions.questions.length : 0);
     } else {
-      console.log('❌ 質問投稿失敗:', result.error);
+      console.log('❌ 意見投稿失敗:', result.error);
     }
     
     return result;
@@ -146,15 +146,15 @@ function testSubmitQuestion() {
 }
 
 /**
- * 現在の質問一覧を取得
+ * 現在の意見一覧を取得
  */
 function getCurrentQuestions() {
   try {
     const result = getQuestions('all');
     
     if (result.success) {
-      console.log('✅ 質問取得成功');
-      console.log('質問数:', result.questions.length);
+      console.log('✅ 意見取得成功');
+      console.log('意見数:', result.questions.length);
       
       if (result.questions.length > 0) {
         console.log('\n最新の5件:');
@@ -166,12 +166,12 @@ function getCurrentQuestions() {
         });
       }
     } else {
-      console.log('❌ 質問取得失敗:', result.error);
+      console.log('❌ 意見取得失敗:', result.error);
     }
     
     return result;
   } catch (error) {
-    console.error('❌ 質問取得エラー:', error);
+    console.error('❌ 意見取得エラー:', error);
     return 'エラー: ' + error.toString();
   }
 }
@@ -231,15 +231,15 @@ function runFullDiagnostics() {
   testSpreadsheetConnection();
   
   // 3. シート内容確認
-  console.log('\n【3. 質問シート確認】');
+  console.log('\n【3. 意見シート確認】');
   checkQuestionSheet();
   
-  // 4. 現在の質問一覧
-  console.log('\n【4. 現在の質問一覧】');
+  // 4. 現在の意見一覧
+  console.log('\n【4. 現在の意見一覧】');
   getCurrentQuestions();
   
-  // 5. 質問投稿テスト
-  console.log('\n【5. 質問投稿テスト】');
+  // 5. 意見投稿テスト
+  console.log('\n【5. 意見投稿テスト】');
   testSubmitQuestion();
   
   console.log('\n========== 診断完了 ==========');
@@ -252,12 +252,12 @@ function testLikeFunction() {
   console.log('=== いいね機能テスト開始 ===');
   
   try {
-    // 1. テスト質問を追加
+    // 1. テスト意見を追加
     const testQuestion = {
       id: Utilities.getUuid(),
       region: 'tokyo',
       category: 'ai',
-      content: 'いいねテスト用質問: ' + new Date().toLocaleString('ja-JP'),
+      content: 'いいねテスト用意見: ' + new Date().toLocaleString('ja-JP'),
       author: 'テストユーザー',
       timestamp: new Date().toISOString(),
       status: 'new',
@@ -265,22 +265,22 @@ function testLikeFunction() {
       likes: 0
     };
     
-    console.log('\n1. テスト質問を追加');
-    console.log('質問ID:', testQuestion.id);
+    console.log('\n1. テスト意見を追加');
+    console.log('意見ID:', testQuestion.id);
     
     const sheetManager = new SheetManager();
     sheetManager.addQuestion(testQuestion);
     
-    // 2. 質問が追加されたか確認
-    console.log('\n2. 質問の追加を確認');
+    // 2. 意見が追加されたか確認
+    console.log('\n2. 意見の追加を確認');
     const questions = sheetManager.getQuestions('all');
     const addedQuestion = questions.find(q => q.id === testQuestion.id);
     
     if (addedQuestion) {
-      console.log('✅ 質問が正常に追加されました');
-      console.log('追加された質問:', addedQuestion);
+      console.log('✅ 意見が正常に追加されました');
+      console.log('追加された意見:', addedQuestion);
     } else {
-      console.log('❌ 質問が見つかりません');
+      console.log('❌ 意見が見つかりません');
       return;
     }
     
@@ -304,7 +304,7 @@ function testLikeFunction() {
         console.log('❌ いいねカウントが増えていません');
       }
     } else {
-      console.log('❌ 更新後の質問が見つかりません');
+      console.log('❌ 更新後の意見が見つかりません');
     }
     
   } catch (error) {
@@ -325,14 +325,14 @@ function checkIdFormat() {
     
     // toCamelCase関数のテスト
     console.log('\n--- toCamelCase関数のテスト ---');
-    const testHeaders = ['ID', '地域', 'カテゴリ', '質問内容', 'いいね数'];
+    const testHeaders = ['ID', '地域', 'カテゴリ', '意見内容', 'いいね数'];
     testHeaders.forEach(header => {
       console.log(`"${header}" → "${sheetManager.toCamelCase(header)}"`);
     });
     
     const questions = sheetManager.getQuestions('all');
     
-    console.log('\n質問数:', questions.length);
+    console.log('\n意見数:', questions.length);
     
     if (questions.length > 0) {
       console.log('\n最初の5件のID情報:');

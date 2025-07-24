@@ -11,23 +11,23 @@ class SheetManager {
    * シートの初期化
    */
   initSheets() {
-    // 質問シート
-    this.questionSheet = this.getOrCreateSheet('質問一覧', [
-      'ID', '地域', 'カテゴリ', '質問内容', '投稿者', 
+    // 意見シート
+    this.questionSheet = this.getOrCreateSheet('意見一覧', [
+      'ID', '地域', 'カテゴリ', '意見内容', '投稿者', 
       'タイムスタンプ', 'ステータス', '処理済み', 'いいね数'
     ]);
     
-    // 代表質問シート
-    this.representativeSheet = this.getOrCreateSheet('代表質問', [
-      'ID', '地域', '代表質問', 'カテゴリ', 'クラスタサイズ', 
-      '元質問ID', '生成日時', '生成方法'
+    // 代表意見シート
+    this.representativeSheet = this.getOrCreateSheet('代表意見', [
+      'ID', '地域', '代表意見', 'カテゴリ', 'クラスタサイズ', 
+      '元意見ID', '生成日時', '生成方法'
     ]);
     
     // 地域別シートも作成
     const regions = ['大阪', '名古屋', '福岡', '広島', '東京'];
     regions.forEach(region => {
-      this.getOrCreateSheet(`質問_${region}`, [
-        'ID', 'カテゴリ', '質問内容', '投稿者', 
+      this.getOrCreateSheet(`意見_${region}`, [
+        'ID', 'カテゴリ', '意見内容', '投稿者', 
         'タイムスタンプ', 'ステータス', '処理済み', 'いいね数'
       ]);
     });
@@ -49,10 +49,10 @@ class SheetManager {
       headerRange.setFontColor('#ffffff');
       headerRange.setFontWeight('bold');
       
-      // 代表質問シートの場合、質問列を幅広に設定
-      if (sheetName === '代表質問') {
-        sheet.setColumnWidth(3, 500); // 代表質問列を500pxに
-        sheet.setColumnWidth(6, 300); // 元質問ID列を300pxに
+      // 代表意見シートの場合、意見列を幅広に設定
+      if (sheetName === '代表意見') {
+        sheet.setColumnWidth(3, 500); // 代表意見列を500pxに
+        sheet.setColumnWidth(6, 300); // 元意見ID列を300pxに
       }
       sheet.setFrozenRows(1);
       
@@ -66,7 +66,7 @@ class SheetManager {
   }
   
   /**
-   * 質問追加
+   * 意見追加
    */
   addQuestion(question) {
     // メインシートに追加
@@ -86,7 +86,7 @@ class SheetManager {
     
     // 地域別シートにも追加
     const regionName = this.getRegionName(question.region);
-    const regionSheet = this.spreadsheet.getSheetByName(`質問_${regionName}`);
+    const regionSheet = this.spreadsheet.getSheetByName(`意見_${regionName}`);
     if (regionSheet) {
       const regionRow = [
         question.id,
@@ -103,7 +103,7 @@ class SheetManager {
   }
   
   /**
-   * 質問取得
+   * 意見取得
    */
   getQuestions(region = 'all') {
     const data = this.questionSheet.getDataRange().getValues();
@@ -130,7 +130,7 @@ class SheetManager {
   }
   
   /**
-   * 代表質問取得
+   * 代表意見取得
    */
   getRepresentativeQuestions(region = 'all') {
     const data = this.representativeSheet.getDataRange().getValues();
@@ -145,7 +145,7 @@ class SheetManager {
       
       const rep = {};
       headers.forEach((header, index) => {
-        if (header === '元質問ID') {
+        if (header === '元意見ID') {
           rep['sourceIds'] = row[index] ? row[index].split(',') : [];
         } else {
           rep[this.toCamelCase(header)] = row[index];
@@ -161,7 +161,7 @@ class SheetManager {
   }
   
   /**
-   * 代表質問保存
+   * 代表意見保存
    */
   saveRepresentativeQuestions(representatives) {
     console.log(`Saving ${representatives.length} representative questions`);
@@ -191,7 +191,7 @@ class SheetManager {
   }
   
   /**
-   * 質問の処理済みフラグ更新
+   * 意見の処理済みフラグ更新
    */
   updateProcessedFlags(questionIds) {
     console.log(`Updating processed flags for ${questionIds.length} questions`);
@@ -206,7 +206,7 @@ class SheetManager {
         // 地域別シートも更新
         const region = data[i][1];
         const regionName = this.getRegionName(region);
-        const regionSheet = this.spreadsheet.getSheetByName(`質問_${regionName}`);
+        const regionSheet = this.spreadsheet.getSheetByName(`意見_${regionName}`);
         
         if (regionSheet) {
           const regionData = regionSheet.getDataRange().getValues();
@@ -231,7 +231,7 @@ class SheetManager {
   }
   
   /**
-   * 元質問の取得
+   * 元意見の取得
    */
   getQuestionsByIds(ids) {
     const allQuestions = this.getQuestions('all');
@@ -266,7 +266,7 @@ class SheetManager {
         // 地域別シートも更新
         const region = data[i][1];
         const regionName = this.getRegionName(region);
-        const regionSheet = this.spreadsheet.getSheetByName(`質問_${regionName}`);
+        const regionSheet = this.spreadsheet.getSheetByName(`意見_${regionName}`);
         
         if (regionSheet) {
           const regionData = regionSheet.getDataRange().getValues();
@@ -301,7 +301,7 @@ class SheetManager {
   }
   
   /**
-   * 複数のIDから質問を取得
+   * 複数のIDから意見を取得
    */
   getQuestionsByIds(ids) {
     if (!ids || ids.length === 0) {
@@ -311,7 +311,7 @@ class SheetManager {
     try {
       const sheet = this.spreadsheet.getSheetByName(this.mainSheetName);
       if (!sheet) {
-        console.error('質問一覧シートが見つかりません');
+        console.error('意見一覧シートが見つかりません');
         return [];
       }
       
@@ -351,15 +351,15 @@ class SheetManager {
       'ID': 'id',
       '地域': 'region',
       'カテゴリ': 'category',
-      '質問内容': 'content',
+      '意見内容': 'content',
       '投稿者': 'author',
       'タイムスタンプ': 'timestamp',
       'ステータス': 'status',
       '処理済み': 'processed',
       'いいね数': 'likes',
-      '代表質問': 'question',
+      '代表意見': 'question',
       'クラスタサイズ': 'clusterSize',
-      '元質問ID': 'sourceIds',
+      '元意見ID': 'sourceIds',
       '生成日時': 'generatedAt',
       '生成方法': 'method'
     };
