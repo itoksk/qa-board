@@ -276,38 +276,38 @@ class QuestionClusterer {
       // ツールと懸念事項の両方がある場合
       const mainTool = intents.tools[0];
       const mainConcern = intents.concerns[0];
-      summary = `${mainTool}を授業で使う際の${mainConcern}と活用方法は？`;
+      summary = `${mainTool}を授業で使う際の${mainConcern}と活用方法を検討すべきだ`;
     } else if (intents.methods.length > 0 && intents.targets.length > 0) {
       // 手法と対象がある場合
-      summary = `${intents.targets[0]}における${intents.methods[0]}の実践方法は？`;
+      summary = `${intents.targets[0]}における${intents.methods[0]}の実践が効果的だ`;
     } else if (commonThemes.tool && commonThemes.usage) {
       // 特定のツールの使い方
-      summary = `${commonThemes.tool}を${commonThemes.usage}する際の方法と注意点は？`;
+      summary = `${commonThemes.tool}を${commonThemes.usage}する際は方法と注意点の理解が重要だ`;
     } else if (patterns.howTo > 0 && patterns.caution > 0) {
       // 方法と注意点の両方が求められている
       const mainKeyword = this.selectMainKeyword(keywords, questions);
-      summary = `${mainKeyword}の効果的な活用方法と留意点は？`;
+      summary = `${mainKeyword}の効果的な活用方法と留意点を共有すべきだ`;
     } else if (keywords.length >= 3) {
       // 複数の具体的キーワードを統合
-      summary = `${keywords[0]}や${keywords[1]}を使った${keywords[2]}の方法は？`;
+      summary = `${keywords[0]}や${keywords[1]}を使った${keywords[2]}の実践が有効だ`;
     } else if (keywords.length >= 2) {
       // 2つのキーワードを組み合わせ
-      summary = `${keywords[0]}における${keywords[1]}の実践方法は？`;
+      summary = `${keywords[0]}における${keywords[1]}の実践が重要だ`;
     } else {
       // カテゴリ別のより具体的なデフォルト
-      const defaultQuestions = {
-        'ai': 'ChatGPTやGeminiを授業で活用する際の方法と注意点は？',
-        'education': 'アクティブラーニングや協働学習の効果的な実践方法は？',
-        'ict': 'タブレットやデジタル教材を授業で活用する方法は？',
-        'other': '教育現場での新しい取り組みと課題解決の方法は？'
+      const defaultOpinions = {
+        'ai': 'ChatGPTやGeminiを授業で活用する際は方法と注意点の理解が必要だ',
+        'education': 'アクティブラーニングや協働学習の効果的な実践が求められている',
+        'ict': 'タブレットやデジタル教材を授業で積極的に活用すべきだ',
+        'other': '教育現場での新しい取り組みと課題解決が重要だ'
       };
-      summary = defaultQuestions[category] || this.createDefaultSummary(questions, category);
+      summary = defaultOpinions[category] || this.createDefaultSummary(questions, category);
     }
     
     // 文字数制限を撤廃し、完全な意見を保持
-    // 意見が「？」で終わっていない場合は追加
-    if (!summary.endsWith('？') && !summary.endsWith('?')) {
-      summary += '？';
+    // 意見文なので「。」で終わっていない場合は追加
+    if (!summary.endsWith('。') && !summary.endsWith('.')) {
+      summary += '。';
     }
     
     console.log(`Generated fallback summary: ${summary}`);
@@ -574,7 +574,7 @@ class QuestionClusterer {
    */
   createDefaultSummary(questions, category) {
     if (questions.length === 0) {
-      return `${this.getCategoryName(category)}について教えてください`;
+      return `${this.getCategoryName(category)}について検討が必要だ`;
     }
     
     // 最初と最後の意見から要素を抽出してミックス
@@ -584,9 +584,9 @@ class QuestionClusterer {
     // 最初の意見から主要な名詞を、最後の意見から動詞を抽出する簡易的な方法
     const keywords = this.extractKeywords(questions);
     if (keywords.length >= 2) {
-      return `${keywords[0]}と${keywords[1]}の効果的な活用方法を教えてください`;
+      return `${keywords[0]}と${keywords[1]}の効果的な活用が重要だ`;
     }
     
-    return `${this.getCategoryName(category)}の実践的な活用方法を教えてください`;
+    return `${this.getCategoryName(category)}の実践的な活用が必要だ`;
   }
 }

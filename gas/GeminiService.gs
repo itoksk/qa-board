@@ -33,21 +33,23 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 3. すべての意見の本質を網羅した、簡潔で的確な代表意見を作成してください
 
 【代表意見の要件】
-- 参加者の経験や考えを統合した文章にする
-- 50-80文字程度を目安に、簡潔かつ的確にまとめる
+- 参加者の経験や考えを統合した意見文にする
+- 100-200文字程度で、内容を充実させてまとめる
 - すべての意見の核心的な内容を含める
-- 具体的なツール名（NotebookLM、Gem等）や手法名は残す
-- 複数の観点がある場合は最も重要な2-3点に絞って統合
-- 実践的で具体的な内容にする
+- 具体的なツール名（NotebookLM、Gem等）や手法名は必ず残す
+- 複数の観点がある場合は3-5点程度まで含めて統合
+- 実践的で具体的な内容を詳しく述べる
 - カテゴリの趣旨に沿った内容にする
+- 参加者が共有したい経験や工夫点を具体的に含める
+- 必ず句点「。」で終わる完全な意見文にする
 
 【重要】
 - 意見の本質を捉えることを最優先にしてください
 - 地域名は含めなくて構いません
 - 参加者が実際に共有したい経験や考えを正確に反映してください
-- 完全な文章として成立させてください
+- 疑問文ではなく、提案・経験・考えを述べる文章にしてください
 
-代表意見（完全な文章で回答）：`;
+代表意見（句点で終わる完全な意見文で回答）：`;
 
     try {
       const response = UrlFetchApp.fetch(this.apiUrl + '?key=' + this.apiKey, {
@@ -64,7 +66,7 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
             temperature: 0.7,
             topK: 40,
             topP: 0.8,
-            maxOutputTokens: 300,
+            maxOutputTokens: 800,
             candidateCount: 1
           },
           safetySettings: [
@@ -106,17 +108,32 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
       console.log('Gemini response length:', generatedText.length);
       console.log('Gemini response:', generatedText);
       
+      // 空レスポンスのチェック
+      if (!generatedText || generatedText.length === 0) {
+        console.error('Gemini returned empty response');
+        console.error('Full API response:', JSON.stringify(result));
+        throw new Error('Gemini APIから空のレスポンスが返されました');
+      }
+      
+      // レスポンスが極端に短い場合（30文字未満）はエラーとする
+      if (generatedText.length < 30) {
+        console.error('Gemini response too short:', generatedText);
+        console.error('Full API response:', JSON.stringify(result));
+        throw new Error('Gemini APIのレスポンスが短すぎます: ' + generatedText);
+      }
+      
       // finishReasonを確認（途中で切れたかどうか）
       const finishReason = result.candidates[0].finishReason;
       if (finishReason && finishReason !== 'STOP') {
         console.warn('Gemini response was truncated. Reason:', finishReason);
       }
       
-      // 意見が完結しているか確認（？で終わっているか）
-      if (!generatedText.endsWith('？') && !generatedText.endsWith('?')) {
-        console.warn('Generated question seems incomplete:', generatedText);
-        // 不完全な場合は「？」を追加
-        return generatedText + '？';
+      // 意見として完結しているか確認（句読点で終わっているか）
+      // 意見なので「？」は不要、句点「。」で終わるべき
+      if (!generatedText.endsWith('。') && !generatedText.endsWith('.')) {
+        console.warn('Generated opinion seems incomplete:', generatedText);
+        // 不完全な場合は「。」を追加
+        return generatedText + '。';
       }
       
       return generatedText;
